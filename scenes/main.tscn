@@ -1,0 +1,253 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
+[ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
+[ext_resource type="Script" path="res://scripts/map_builder.gd" id="3_mapb"]
+[ext_resource type="Script" path="res://scripts/map_manager.gd" id="4_mapm"]
+[ext_resource type="Script" path="res://scripts/player_controller.gd" id="5_plyr"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="6_cam"]
+[ext_resource type="Script" path="res://scripts/map_style.gd" id="7_style"]
+[ext_resource type="Script" path="res://scripts/zombie_spawner.gd" id="8_zspn"]
+[ext_resource type="PackedScene" path="res://scenes/zombie.tscn" id="9_zscn"]
+[ext_resource type="Script" path="res://scripts/node_spawner.gd" id="10_nspn"]
+[ext_resource type="PackedScene" path="res://scenes/shop_node.tscn" id="11_shopscn"]
+[ext_resource type="PackedScene" path="res://scenes/boss_altar_node.tscn" id="12_bossscn"]
+[ext_resource type="PackedScene" path="res://scenes/zombie_runner.tscn" id="13_zrun"]
+[ext_resource type="PackedScene" path="res://scenes/zombie_brute.tscn" id="14_zbrt"]
+[ext_resource type="Script" path="res://scripts/compass_hud.gd" id="15_cmps"]
+[ext_resource type="Script" path="res://scripts/ability_bar.gd" id="16_abar"]
+[ext_resource type="Script" path="res://scripts/ability_button_ui.gd" id="17_abtn"]
+[ext_resource type="Script" path="res://scripts/game_over_screen.gd" id="18_gover"]
+[ext_resource type="PackedScene" path="res://scenes/survivor_node.tscn" id="19_svnode"]
+[ext_resource type="Script" path="res://scripts/boss_victory_screen.gd" id="20_bvic"]
+
+[sub_resource type="Resource" id="Resource_style1"]
+script = ExtResource("7_style")
+road_color = Color(0.55, 0.55, 0.55, 1)
+road_width = 3.0
+water_color = Color(0.2, 0.45, 0.75, 1)
+building_color = Color(0.75, 0.68, 0.6, 1)
+landuse_color = Color(0.45, 0.62, 0.38, 1)
+ground_color = Color(0.3, 0.5, 0.3, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.4
+height = 1.8
+
+[node name="Main" type="Node3D"]
+
+[node name="GPSManager" type="Node" parent="."]
+script = ExtResource("1_gpsm")
+
+[node name="OverpassClient" type="HTTPRequest" parent="."]
+script = ExtResource("2_ovps")
+
+[node name="MapBuilder" type="Node3D" parent="."]
+script = ExtResource("3_mapb")
+style = SubResource("Resource_style1")
+gps_manager_path = NodePath("../GPSManager")
+
+[node name="MapManager" type="Node3D" parent="."]
+script = ExtResource("4_mapm")
+gps_manager_path = NodePath("../GPSManager")
+overpass_client_path = NodePath("../OverpassClient")
+map_builder_path = NodePath("../MapBuilder")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+script = ExtResource("5_plyr")
+gps_manager_path = NodePath("../GPSManager")
+hud_label_path = NodePath("../HUD/PlayerHPLabel")
+currency_label_path = NodePath("../HUD/CurrencyLabel")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("6_cam")
+target_path = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+current = true
+
+[node name="ZombieSpawner" type="Node3D" parent="."]
+script = ExtResource("8_zspn")
+player_path = NodePath("../Player")
+zombie_scenes = Array[PackedScene]([ExtResource("9_zscn"), ExtResource("13_zrun"), ExtResource("14_zbrt")])
+spawn_count = 5
+spawn_radius_min = 12.0
+spawn_radius_max = 30.0
+overpass_client_path = NodePath("../OverpassClient")
+
+[node name="NodeSpawner" type="Node3D" parent="."]
+script = ExtResource("10_nspn")
+player_path = NodePath("../Player")
+shop_node_scene = ExtResource("11_shopscn")
+boss_altar_scene = ExtResource("12_bossscn")
+survivor_node_scene = ExtResource("19_svnode")
+shop_count = 3
+shop_radius_min = 15.0
+shop_radius_max = 30.0
+survivor_count = 2
+survivor_radius_min = 20.0
+survivor_radius_max = 35.0
+boss_altar_radius_min = 40.0
+boss_altar_radius_max = 50.0
+overpass_client_path = NodePath("../OverpassClient")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="PlayerHPLabel" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 240.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 24
+text = "HP: 100/100"
+
+[node name="CurrencyLabel" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 55.0
+offset_right = 240.0
+offset_bottom = 95.0
+theme_override_font_sizes/font_size = 24
+text = "Gold: 0"
+
+[node name="CompassHUD" type="Control" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 90.0
+script = ExtResource("15_cmps")
+player_path = NodePath("../../Player")
+strip_width = 600.0
+strip_height = 36.0
+
+[node name="AbilityBar" type="Control" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -130.0
+offset_top = -150.0
+offset_right = 130.0
+offset_bottom = -20.0
+script = ExtResource("16_abar")
+player_path = NodePath("../../Player")
+knockback_button_path = NodePath("KnockbackButton")
+second_wind_button_path = NodePath("SecondWindButton")
+overcharge_button_path = NodePath("OverchargeButton")
+
+[node name="KnockbackButton" type="Control" parent="HUD/AbilityBar"]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 72.0
+offset_bottom = 94.0
+script = ExtResource("17_abtn")
+radius = 36.0
+icon_color = Color(0.3, 0.55, 0.9, 1)
+label_text = "Q"
+icon_type = 0
+
+[node name="SecondWindButton" type="Control" parent="HUD/AbilityBar"]
+offset_left = 94.0
+offset_top = 0.0
+offset_right = 166.0
+offset_bottom = 94.0
+script = ExtResource("17_abtn")
+radius = 36.0
+icon_color = Color(0.3, 0.8, 0.4, 1)
+label_text = "E"
+icon_type = 1
+
+[node name="OverchargeButton" type="Control" parent="HUD/AbilityBar"]
+offset_left = 188.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 94.0
+script = ExtResource("17_abtn")
+radius = 36.0
+icon_color = Color(0.9, 0.5, 0.15, 1)
+label_text = "R"
+icon_type = 2
+
+[node name="GameOverScreen" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+script = ExtResource("18_gover")
+player_path = NodePath("../../Player")
+
+[node name="Background" type="ColorRect" parent="HUD/GameOverScreen"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.75)
+
+[node name="CenterContainer" type="CenterContainer" parent="HUD/GameOverScreen"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/GameOverScreen/CenterContainer"]
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="HUD/GameOverScreen/CenterContainer/VBoxContainer"]
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+text = "YOU DIED"
+
+[node name="RestartButton" type="Button" parent="HUD/GameOverScreen/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(160, 50)
+theme_override_font_sizes/font_size = 24
+text = "Restart"
+
+[node name="BossVictoryScreen" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+script = ExtResource("20_bvic")
+reward_label_path = NodePath("CenterContainer/VBoxContainer/RewardLabel")
+
+[node name="Background" type="ColorRect" parent="HUD/BossVictoryScreen"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.75)
+
+[node name="CenterContainer" type="CenterContainer" parent="HUD/BossVictoryScreen"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/BossVictoryScreen/CenterContainer"]
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+text = "BOSS DEFEATED"
+
+[node name="RewardLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "+0 Gold"
+
+[node name="ContinueButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+theme_override_font_sizes/font_size = 22
+text = "Continue Deeper"
+
+[node name="LeaveButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+theme_override_font_sizes/font_size = 22
+text = "Leave (Bank Run)"
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-45, 30, 0)

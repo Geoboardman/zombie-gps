@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://y0hfr6le0gqh"]
+
+[ext_resource type="Script" uid="uid://7cnu04dyuvci" path="res://scripts/zombie.gd" id="1_zmb"]
+[ext_resource type="Script" uid="uid://flqeewwin2q7" path="res://scripts/health_bar_3d.gd" id="2_hbar"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_z1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_z1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_z1"]
+albedo_color = Color(0.7, 0.15, 0.15, 1)
+
+[node name="Zombie" type="CharacterBody3D" unique_id=1654691400]
+script = ExtResource("1_zmb")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=445854334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_z1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1764942978]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_z1")
+surface_material_override/0 = SubResource("StandardMaterial3D_z1")
+
+[node name="HealthBar" type="Node3D" parent="." unique_id=1498481456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+script = ExtResource("2_hbar")
+width = 1.0
+height = 0.13

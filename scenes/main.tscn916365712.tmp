@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://dmwd4bmdx4who"]
+
+[ext_resource type="Script" uid="uid://dudaehu1whv2a" path="res://scripts/gps_manager.gd" id="1_gpsm"]
+[ext_resource type="Script" uid="uid://b53qxsuo82qj1" path="res://scripts/overpass_client.gd" id="2_ovps"]
+[ext_resource type="Script" uid="uid://bx3loojf8com3" path="res://scripts/map_builder.gd" id="3_mapb"]
+[ext_resource type="Script" uid="uid://be2blfqv3fwnr" path="res://scripts/map_manager.gd" id="4_mapm"]
+[ext_resource type="Script" uid="uid://bbuuqf4h6asxk" path="res://scripts/player_controller.gd" id="5_plyr"]
+[ext_resource type="Script" uid="uid://f87k5cex77e6" path="res://scripts/camera_rig.gd" id="6_cam"]
+[ext_resource type="Script" uid="uid://d14bfdssa64ou" path="res://scripts/map_style.gd" id="7_style"]
+
+[sub_resource type="Resource" id="Resource_style1"]
+script = ExtResource("7_style")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.4
+height = 1.8
+
+[node name="Main" type="Node3D" unique_id=1589719738]
+
+[node name="GPSManager" type="Node" parent="." unique_id=1965650282]
+script = ExtResource("1_gpsm")
+
+[node name="OverpassClient" type="HTTPRequest" parent="." unique_id=672137444]
+script = ExtResource("2_ovps")
+
+[node name="MapBuilder" type="Node3D" parent="." unique_id=1120703890]
+script = ExtResource("3_mapb")
+style = SubResource("Resource_style1")
+gps_manager_path = NodePath("../GPSManager")
+
+[node name="MapManager" type="Node3D" parent="." unique_id=1493657545]
+script = ExtResource("4_mapm")
+gps_manager_path = NodePath("../GPSManager")
+overpass_client_path = NodePath("../OverpassClient")
+map_builder_path = NodePath("../MapBuilder")
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=272516706]
+script = ExtResource("5_plyr")
+gps_manager_path = NodePath("../GPSManager")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1731718617]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player" unique_id=137651345]
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1570963510]
+script = ExtResource("6_cam")
+target_path = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=212584446]
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=607541612]
+transform = Transform3D(0.8660254, -0.35355338, 0.35355338, 0, 0.70710677, 0.70710677, -0.5, -0.6123724, 0.6123724, 0, 0, 0)

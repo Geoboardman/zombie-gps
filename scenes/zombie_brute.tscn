@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/zombie.gd" id="1_zmb"]
+[ext_resource type="Script" path="res://scripts/health_bar_3d.gd" id="2_hbar"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_brt"]
+radius = 0.55
+height = 2.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_brt"]
+radius = 0.55
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_brt"]
+albedo_color = Color(0.25, 0.45, 0.2, 1)
+
+[node name="Zombie" type="CharacterBody3D"]
+script = ExtResource("1_zmb")
+detection_radius = 10.0
+lose_interest_radius = 16.0
+attack_range = 1.8
+wander_speed = 0.35
+chase_speed = 1.1
+attack_cooldown = 1.4
+attack_damage = 22
+max_health = 130
+currency_reward = 25
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+shape = SubResource("CapsuleShape3D_brt")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+mesh = SubResource("CapsuleMesh_brt")
+surface_material_override/0 = SubResource("StandardMaterial3D_brt")
+
+[node name="HealthBar" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 0)
+script = ExtResource("2_hbar")
+width = 1.3
+height = 0.16

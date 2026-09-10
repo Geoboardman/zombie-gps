@@ -1,0 +1,40 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/survivor_node.gd" id="1_svnode"]
+[ext_resource type="PackedScene" path="res://scenes/survivor.tscn" id="2_srvrscn"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_svnode"]
+radius = 10.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_svnode"]
+top_radius = 1.0
+bottom_radius = 1.0
+height = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_svnode"]
+albedo_color = Color(0.85, 0.55, 0.25, 1)
+emission_enabled = true
+emission = Color(0.5, 0.3, 0.1, 1)
+emission_energy_multiplier = 0.6
+
+[node name="SurvivorNode" type="Area3D"]
+script = ExtResource("1_svnode")
+survivor_scene = ExtResource("2_srvrscn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_svnode")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CylinderMesh_svnode")
+surface_material_override/0 = SubResource("StandardMaterial3D_svnode")
+
+[node name="RecruitLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+billboard = 1
+no_depth_test = true
+font_size = 48
+pixel_size = 0.015
+outline_size = 10
+horizontal_alignment = 1
+text = "Recruit"
