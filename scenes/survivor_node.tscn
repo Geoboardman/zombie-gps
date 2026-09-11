@@ -3,13 +3,13 @@
 [ext_resource type="Script" path="res://scripts/survivor_node.gd" id="1_svnode"]
 [ext_resource type="PackedScene" path="res://scenes/survivor.tscn" id="2_srvrscn"]
 [ext_resource type="Script" path="res://scripts/character_visual.gd" id="3_visual"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="4_survivor"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam.gltf" id="4_survivor"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Tent.fbx" id="5_tent"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Radio.fbx" id="6_radio"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Bonfire_Fire.fbx" id="7_fire"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis_SingleWeapon.gltf" id="8_lis"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt_SingleWeapon.gltf" id="9_matt"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun_SingleWeapon.gltf" id="10_shaun"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis.gltf" id="8_lis"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt.gltf" id="9_matt"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun.gltf" id="10_shaun"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_svnode"]
 radius = 10.0
