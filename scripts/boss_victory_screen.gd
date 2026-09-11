@@ -33,13 +33,25 @@ func _ready() -> void:
 	_leave_button.pressed.connect(_on_leave_pressed)
 
 
-func show_victory(reward: int) -> void:
+func show_victory(
+	reward: int,
+	carried_gold: int,
+	district: int,
+	next_modifier: String,
+	next_description: String,
+	next_gold_bonus: int
+) -> void:
 	_summary_mode = false
-	_reward_label.text = "+%d Gold secured at this checkpoint" % reward
-	_stats_label.visible = false
+	var title := get_node("CenterContainer/VBoxContainer/TitleLabel") as Label
+	title.text = "DISTRICT %d CLEARED" % district
+	_reward_label.text = "+%d GOLD  •  %d CARRIED" % [reward, carried_gold]
+	_stats_label.text = "EXTRACT to bank your carried gold.\n\nPUSH DEEPER: %s\n%s\n+%d%% gold rewards — dying loses carried gold." % [
+		next_modifier, next_description, next_gold_bonus,
+	]
+	_stats_label.visible = true
 	_continue_button.visible = true
-	_continue_button.text = "PUSH DEEPER"
-	_leave_button.text = "EXTRACT RUN"
+	_continue_button.text = "PUSH TO DISTRICT %d" % (district + 1)
+	_leave_button.text = "EXTRACT %d GOLD" % carried_gold
 
 	visible = true
 	get_tree().paused = true
