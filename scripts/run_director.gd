@@ -84,7 +84,7 @@ func _process(_delta: float) -> void:
 	if _active_target == null or not is_instance_valid(_active_target):
 		return
 	var distance := _player.global_position.distance_to(_active_target.global_position)
-	_objective_detail.text = "%s  •  %dm" % [_detail_for_stage(), int(ceil(distance))]
+	_objective_detail.text = "%dm" % int(ceil(distance))
 
 
 func register_enemy_defeated() -> void:
@@ -311,7 +311,15 @@ func _detail_for_stage() -> String:
 
 func _set_objective(title: String, detail: String) -> void:
 	_objective_title.text = title
-	_objective_detail.text = detail
+	_objective_detail.text = _compact_detail(detail)
+
+
+func _compact_detail(detail: String) -> String:
+	if detail.is_empty():
+		return ""
+	if detail.to_lower().contains("loading"):
+		return "LOCATING"
+	return "ACTIVE"
 
 
 func _toast(message: String) -> void:
