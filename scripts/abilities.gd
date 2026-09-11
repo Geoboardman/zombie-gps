@@ -45,7 +45,7 @@ static func cooldown_for(player: PlayerController, type: Type) -> float:
 static func can_activate(player: PlayerController, type: Type) -> bool:
 	match type:
 		Type.FIELD_DRESSING:
-			return player.health.current_health < player.health.max_health and not player.is_field_dressing_active()
+			return player.party_needs_dressing() and not player.is_field_dressing_active()
 		Type.FRAG_GRENADE:
 			return player.has_grenade_target()
 		_:
