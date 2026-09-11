@@ -283,7 +283,7 @@ func _draft_upgrade_choices(count: int) -> Array[int]:
 	var choices: Array[int] = []
 	var used_categories: Array[String] = []
 	for candidate: int in pool:
-		var category := Upgrades.category(candidate as Upgrades.Type)
+		var category: String = _upgrade_category(candidate)
 		if used_categories.has(category):
 			continue
 		choices.append(candidate)
@@ -297,6 +297,20 @@ func _draft_upgrade_choices(count: int) -> Array[int]:
 			choices.append(candidate)
 	_recent_upgrade_choices = choices.duplicate()
 	return choices
+
+
+func _upgrade_category(type: int) -> String:
+	match type:
+		Upgrades.Type.ATTACK_DAMAGE, Upgrades.Type.ATTACK_SPEED, Upgrades.Type.ATTACK_RANGE, Upgrades.Type.DOUBLE_TAP, Upgrades.Type.PIERCING_ROUNDS, Upgrades.Type.EXECUTIONER:
+			return "WEAPON"
+		Upgrades.Type.MAX_HEALTH, Upgrades.Type.REGEN, Upgrades.Type.LIFESTEAL, Upgrades.Type.ARMOR, Upgrades.Type.ADRENAL_RESPONSE:
+			return "SURVIVAL"
+		Upgrades.Type.KNOCKBACK_POWER, Upgrades.Type.AURA_POWER, Upgrades.Type.BURNING_PRESENCE, Upgrades.Type.CLUSTER_GRENADE:
+			return "ABILITY"
+		Upgrades.Type.GOLD_GAIN:
+			return "UTILITY"
+		_:
+			return "OTHER"
 
 
 func _shuffle_with_run_rng(values: Array[int]) -> void:
