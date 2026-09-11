@@ -31,9 +31,9 @@ mesh = SubResource("CylinderMesh_ring")
 surface_material_override/0 = SubResource("StandardMaterial3D_ring")
 
 [node name="FirstAidKit" parent="." instance=ExtResource("2_model")]
-position = Vector3(0, 0.08, 0)
+position = Vector3(0, 0.3, 0)
 rotation_degrees = Vector3(0, -18, 0)
-scale = Vector3(1.35, 1.35, 1.35)
+scale = Vector3(0.9, 0.9, 0.9)
 
 [node name="Label3D" type="Label3D" parent="."]
 position = Vector3(0, 1.45, 0)
