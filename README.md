@@ -14,12 +14,23 @@ markers:
 2. An outbreak is detected six meters ahead.
 3. Closing the distance triggers the player's automatic attack.
 4. The first zombie dies in one hit and awards 15 gold.
-5. The player chooses Hollow Points, Quick Hands, or Field Dressing.
-6. A nearby supply cache is revealed and awards 35 gold plus healing.
-7. A survivor distress signal appears farther ahead.
-8. Recruiting that survivor reveals the boss altar.
-9. Entering the altar radius reveals a touch-friendly **Summon Boss** button.
-10. Defeating the boss presents the existing Bank-or-Continue decision.
+5. A visible Field Kit drops where the zombie died; proximity reveals an
+   **Open Field Kit** button, but nothing happens until the player taps it.
+6. The player chooses Hollow Points, Quick Hands, or Field Dressing.
+7. A nearby supply cache is revealed; the player must tap **Search Cache** to
+   receive 35 gold and healing.
+8. A survivor distress signal appears farther ahead and requires confirmation.
+9. Recruiting that survivor reveals the boss altar.
+10. Defeating the boss offers **Push Deeper** or **Extract Run**.
+
+Proximity never spends currency, consumes rewards, recruits survivors, or
+starts bosses. It only reveals a large contextual action button. Combat remains
+automatic so the outdoor experience does not demand continuous screen focus.
+
+Pushing deeper generates another supply → survivor → boss district with longer
+distances, more heat, and a boss that scales each district. Extracting displays
+a run summary for distance, kills, recruits, bosses, district, and recovered
+gold. Meta-progression persistence is not implemented yet.
 
 Ambient waves remain gated until the first upgrade is selected. Their strength
 is driven by run heat earned through movement and meaningful actions, rather
@@ -49,6 +60,8 @@ The mock GPS starts near Redmond, Washington. Edit `mock_start_lat` and
 - `scripts/map_manager.gd` — serialized map refresh coordination
 - `scripts/map_builder.gd` — generated road and polygon meshes
 - `scripts/run_director.gd` — guided opening, objectives, heat, and progression
+- `scripts/interactable_map_node.gd` — tap-confirm contract for world objects
+- `scripts/interaction_controller.gd` — shared contextual action button
 - `scripts/player_controller.gd` — health, combat, abilities, and player stats
 - `scripts/zombie_spawner.gd` — gated, heat-scaled ambient waves
 - `scripts/zombie.gd`, `scripts/boss.gd` — enemy behavior
@@ -101,7 +114,7 @@ character pipeline is working on a phone.
 - Guided objectives are placed on a consistent local bearing, not yet snapped
   to safe pedestrian paths.
 - Real GPS and sensor heading are not implemented.
-- Continuing after a boss does not generate a second guided district yet.
+- Extracted statistics and gold are summarized but not persisted between runs.
 - The public Overpass API is suitable for development, not production traffic.
 - Generated map geometry is rebuilt as one area rather than streamed in chunks.
 - Bosses intentionally resist Knockback Pulse, although ordinary damage, aura,
