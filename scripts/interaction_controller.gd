@@ -9,8 +9,8 @@ extends Control
 @export var action_button_path: NodePath
 @export var detail_label_path: NodePath
 
-const BUTTON_SIZE := Vector2(205.0, 48.0)
-const DETAIL_SIZE := Vector2(225.0, 30.0)
+const BUTTON_SIZE := Vector2(178.0, 42.0)
+const DETAIL_SIZE := Vector2(190.0, 26.0)
 const WORLD_OFFSET := Vector3(0.0, 0.65, 0.0)
 const DETAIL_GAP := 5.0
 const SCREEN_GAP := 10.0
@@ -81,7 +81,6 @@ func _layout_entries(available: Array[InteractableMapNode]) -> void:
 	if camera == null:
 		return
 	var viewport_size := get_viewport_rect().size
-	var player_screen := camera.unproject_position(_player.global_position + Vector3(0.0, 1.0, 0.0))
 	var occupied: Array[Rect2] = []
 	for candidate: InteractableMapNode in available:
 		var entry: Dictionary = _entries[candidate]
@@ -92,10 +91,7 @@ func _layout_entries(available: Array[InteractableMapNode]) -> void:
 			detail.visible = false
 			continue
 		var projected := camera.unproject_position(candidate.global_position + WORLD_OFFSET)
-		var away_from_player := projected - player_screen
-		if away_from_player.length_squared() < 1.0:
-			away_from_player = Vector2.UP
-		var prompt_center := projected + away_from_player.normalized() * 58.0
+		var prompt_center := projected + Vector2(0.0, 48.0)
 		var button_position := Vector2(
 			clampf(prompt_center.x - BUTTON_SIZE.x * 0.5, 12.0, viewport_size.x - BUTTON_SIZE.x - 12.0),
 			clampf(prompt_center.y, 218.0, viewport_size.y - BUTTON_SIZE.y - 140.0)
