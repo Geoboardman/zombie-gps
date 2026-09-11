@@ -132,6 +132,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_1")
 
 [node name="VisualRoot" type="Node3D" parent="Player"]
+rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(1.1, 1.1, 1.1)
 script = ExtResource("27_visual")
 
