@@ -31,8 +31,8 @@ func _on_player_entered(player: PlayerController) -> void:
 	detail_text = "This starts the boss fight"
 
 
-func _on_player_exited(_player: PlayerController) -> void:
-	super._on_player_exited(_player)
+func _on_player_exited(exiting_player: PlayerController) -> void:
+	super._on_player_exited(exiting_player)
 	_player_in_range = false
 
 
