@@ -118,6 +118,7 @@ gps_manager_path = NodePath("../GPSManager")
 hud_label_path = NodePath("../HUD/PlayerHPLabel")
 health_bar_path = NodePath("../HUD/HealthBar")
 currency_label_path = NodePath("../HUD/CurrencyLabel")
+build_label_path = NodePath("../HUD/BuildLabel")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -293,6 +294,23 @@ autowrap_mode = 2
 clip_text = true
 modulate = Color(1, 1, 1, 0)
 
+[node name="BuildLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 24.0
+offset_top = 338.0
+offset_right = 516.0
+offset_bottom = 406.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.82, 0.88, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 14
+text = "BUILD"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+clip_text = true
+
 [node name="InteractionController" type="Control" parent="HUD"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -342,33 +360,36 @@ overcharge_button_path = NodePath("OverchargeButton")
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 72.0
-offset_bottom = 94.0
+offset_bottom = 112.0
 script = ExtResource("17_abtn")
 radius = 36.0
 icon_color = Color(0.3, 0.55, 0.9, 1)
 label_text = "Q"
+ability_name = "STASIS"
 icon_type = 0
 
 [node name="SecondWindButton" type="Control" parent="HUD/AbilityBar"]
 offset_left = 94.0
 offset_top = 0.0
 offset_right = 166.0
-offset_bottom = 94.0
+offset_bottom = 112.0
 script = ExtResource("17_abtn")
 radius = 36.0
 icon_color = Color(0.3, 0.8, 0.4, 1)
 label_text = "E"
+ability_name = "DRESSING"
 icon_type = 1
 
 [node name="OverchargeButton" type="Control" parent="HUD/AbilityBar"]
 offset_left = 188.0
 offset_top = 0.0
 offset_right = 260.0
-offset_bottom = 94.0
+offset_bottom = 112.0
 script = ExtResource("17_abtn")
 radius = 36.0
 icon_color = Color(0.9, 0.5, 0.15, 1)
 label_text = "R"
+ability_name = "FRAG"
 icon_type = 2
 
 [node name="GameOverScreen" type="Control" parent="HUD"]
