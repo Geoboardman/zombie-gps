@@ -77,6 +77,8 @@ var _health_bar: ProgressBar
 var _currency_label: Label
 var _build_label: Label
 var _mesh_material: StandardMaterial3D
+var _visual: CharacterVisual
+var _movement_animation_timer := 0.0
 
 const BASE_PLAYER_COLOR := Color(0.85, 0.85, 0.88)
 const STASIS_FLASH_COLOR := Color(0.3, 0.6, 0.95)
@@ -101,6 +103,9 @@ func _ready() -> void:
 	_mesh_material = StandardMaterial3D.new()
 	_mesh_material.albedo_color = BASE_PLAYER_COLOR
 	mesh_instance.set_surface_override_material(0, _mesh_material)
+	_visual = get_node_or_null("VisualRoot") as CharacterVisual
+	if _visual != null:
+		_visual.play_clip("Idle_Gun")
 
 	# All three abilities granted by default for now, ready immediately --
 	# this is a "test whether active abilities feel good at all" pass,
@@ -124,6 +129,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _movement_animation_timer > 0.0:
+		_movement_animation_timer -= delta
+		if _movement_animation_timer <= 0.0 and _visual != null:
+			_visual.play_clip("Idle_Gun")
 	_attack_timer -= delta
 	if _attack_timer <= 0.0:
 		_try_attack()
@@ -296,12 +305,48 @@ func _flash_color(color: Color, duration: float) -> void:
 # "an action just happened" at a glance, with zero art assets.
 func _play_attack_lunge(target_pos: Vector3) -> void:
 	look_at(Vector3(target_pos.x, global_position.y, target_pos.z), Vector3.UP)
+	if _visual != null:
+		_visual.recoil()
+		_play_shot_feedback(target_pos)
+		return
 
 	var mesh_instance := get_node("MeshInstance3D") as MeshInstance3D
 	var original_scale := mesh_instance.scale
 	mesh_instance.scale = original_scale * 1.25
 	var tween := create_tween()
 	tween.tween_property(mesh_instance, "scale", original_scale, 0.15)
+
+
+func _play_shot_feedback(target_pos: Vector3) -> void:
+	var start := global_position + Vector3(0.0, 1.15, 0.0)
+	var end := target_pos + Vector3(0.0, 0.9, 0.0)
+	var tracer := MeshInstance3D.new()
+	var line_mesh := ImmediateMesh.new()
+	line_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	line_mesh.surface_add_vertex(start)
+	line_mesh.surface_add_vertex(end)
+	line_mesh.surface_end()
+	tracer.mesh = line_mesh
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.82, 0.25)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.55, 0.1)
+	tracer.material_override = material
+	get_tree().current_scene.add_child(tracer)
+	get_tree().create_timer(0.07).timeout.connect(tracer.queue_free)
+
+	var flash := MeshInstance3D.new()
+	var flash_mesh := SphereMesh.new()
+	flash_mesh.radius = 0.12
+	flash_mesh.height = 0.24
+	flash.mesh = flash_mesh
+	flash.material_override = material
+	get_tree().current_scene.add_child(flash)
+	flash.global_position = start
+	var tween := flash.create_tween()
+	tween.tween_property(flash, "scale", Vector3.ZERO, 0.1)
+	tween.tween_callback(flash.queue_free)
 
 
 # Stops nearby zombies in attack range; bosses are slowed rather than frozen.
@@ -499,6 +544,9 @@ func _on_location_updated(_lat: float, _lon: float) -> void:
 	var move_dir := new_position - _last_position
 	if move_dir.length_squared() > 0.0001:
 		look_at(global_position + move_dir, Vector3.UP)
+		_movement_animation_timer = 0.2
+		if _visual != null:
+			_visual.play_clip("Walk_Gun")
 
 	_last_position = new_position
 	global_position = new_position
