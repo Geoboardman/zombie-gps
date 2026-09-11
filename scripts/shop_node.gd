@@ -28,7 +28,7 @@ func _ready() -> void:
 	_label = get_node("UpgradeLabel") as Label3D
 	_label.text = "%s\n%dg" % [Upgrades.display_name(_chosen_type), upgrade_cost]
 	action_label = "BUY FOR %d GOLD" % upgrade_cost
-	detail_text = Upgrades.display_name(_chosen_type)
+	detail_text = Upgrades.choice_description(_chosen_type).capitalize()
 
 
 func _perform_interaction(player: PlayerController) -> void:
