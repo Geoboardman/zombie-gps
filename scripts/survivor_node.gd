@@ -10,6 +10,7 @@ signal recruited(survivor: Survivor)
 @export var survivor_scene: PackedScene
 
 var _chosen_kind: Survivor.SurvivorKind
+var _chosen_appearance := 0
 var _label: Label3D
 var _visual: CharacterVisual
 
@@ -20,12 +21,18 @@ func _ready() -> void:
 	var kinds: Array[int] = []
 	kinds.assign(Survivor.SurvivorKind.values())
 	_chosen_kind = kinds[randi() % kinds.size()] as Survivor.SurvivorKind
+	_chosen_appearance = get_tree().get_nodes_in_group("survivors").size() % Survivor.NAMES.size()
 
 	_label = get_node("RecruitLabel") as Label3D
-	_visual = get_node("VisualRoot") as CharacterVisual
+	for index in range(Survivor.NAMES.size()):
+		var preview := get_node_or_null("Visual%d" % index) as CharacterVisual
+		if preview != null:
+			preview.visible = index == _chosen_appearance
+	_visual = get_node("Visual%d" % _chosen_appearance) as CharacterVisual
 	_visual.play_clip("Idle_Gun")
-	_label.text = "Recruit\n%s" % Survivor.name_for_kind(_chosen_kind)
-	action_label = "RECRUIT %s" % Survivor.name_for_kind(_chosen_kind).to_upper()
+	var recruit_name: String = Survivor.NAMES[_chosen_appearance]
+	_label.text = "%s\n%s" % [recruit_name, Survivor.name_for_kind(_chosen_kind)]
+	action_label = "RECRUIT %s" % recruit_name.to_upper()
 	detail_text = _description_for_kind(_chosen_kind)
 
 
@@ -38,6 +45,7 @@ func _perform_interaction(player: PlayerController) -> void:
 
 	var survivor: Survivor = survivor_scene.instantiate()
 	survivor.kind = _chosen_kind
+	survivor.appearance_index = _chosen_appearance
 	survivor.player = player
 
 	# Spread survivors around the player so they don't all stack on the
@@ -57,12 +65,4 @@ func _perform_interaction(player: PlayerController) -> void:
 
 
 func _description_for_kind(value: Survivor.SurvivorKind) -> String:
-	match value:
-		Survivor.SurvivorKind.FIGHTER:
-			return "Fighter — attacks nearby infected"
-		Survivor.SurvivorKind.MEDIC:
-			return "Medic — periodically restores health"
-		Survivor.SurvivorKind.SCOUT:
-			return "Scout — increases gold recovered"
-		_:
-			return "Invite this survivor to join your party"
+	return "%s — %s" % [Survivor.name_for_kind(value), Survivor.description_for_kind(value)]
