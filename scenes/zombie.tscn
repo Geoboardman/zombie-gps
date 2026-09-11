@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://7cnu04dyuvci" path="res://scripts/zombie.gd" id="1_zmb"]
 [ext_resource type="Script" uid="uid://flqeewwin2q7" path="res://scripts/health_bar_3d.gd" id="2_hbar"]
+[ext_resource type="Script" path="res://scripts/character_visual.gd" id="3_visual"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Zombie_Basic.gltf" id="4_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_z1"]
 radius = 0.4
@@ -22,9 +24,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_z1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1764942978]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_z1")
 surface_material_override/0 = SubResource("StandardMaterial3D_z1")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+scale = Vector3(1.3, 1.3, 1.3)
+script = ExtResource("3_visual")
+
+[node name="Model" parent="VisualRoot" instance=ExtResource("4_model")]
 
 [node name="HealthBar" type="Node3D" parent="." unique_id=1498481456]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
