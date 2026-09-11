@@ -1,10 +1,9 @@
 class_name ShopNode
-extends MapNode
+extends InteractableMapNode
 
 # Picks one random upgrade type at spawn time and displays it above the
-# node, so which shop to walk to becomes a real decision instead of "any
-# node is the same node." Still fully passive on the actual purchase --
-# walking into range with enough gold auto-buys it.
+# node, so which shop to walk to becomes a real decision. Proximity reveals
+# the shared purchase button; spending never happens until the player taps.
 
 @export var upgrade_cost := 50
 
@@ -28,10 +27,13 @@ func _ready() -> void:
 
 	_label = get_node("UpgradeLabel") as Label3D
 	_label.text = "%s\n%dg" % [Upgrades.display_name(_chosen_type), upgrade_cost]
+	action_label = "BUY FOR %d GOLD" % upgrade_cost
+	detail_text = Upgrades.display_name(_chosen_type)
 
 
-func _on_player_entered(player: PlayerController) -> void:
+func _perform_interaction(player: PlayerController) -> void:
 	if player.try_spend_currency(upgrade_cost):
+		consume()
 		var description := Upgrades.apply(player, _chosen_type)
 		print("[ShopNode] Purchased! %s" % description)
 	else:
