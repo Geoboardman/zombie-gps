@@ -32,6 +32,9 @@ var player: PlayerController
 var health: Health
 var injuries := 0
 var is_downed := false
+var kills := 0
+var bosses_survived := 0
+var times_downed := 0
 var _attack_timer := 0.0
 var _heal_timer := 0.0
 var _dressing_timer := 0.0
@@ -171,7 +174,10 @@ func _process_weapon(delta: float) -> void:
 			nearest_distance = distance
 	if nearest == null:
 		return
+	var target_was_alive := nearest.health != null and nearest.health.current_health > 0
 	nearest.take_damage(attack_damage)
+	if target_was_alive and nearest.health != null and nearest.health.current_health <= 0:
+		kills += 1
 	_attack_timer = attack_interval
 	look_at(Vector3(nearest.global_position.x, global_position.y, nearest.global_position.z), Vector3.UP)
 	if _visual != null:
@@ -223,6 +229,7 @@ func _on_health_changed(current: int, maximum: int) -> void:
 func _on_health_depleted() -> void:
 	if injuries == 0:
 		injuries = 1
+		times_downed += 1
 		is_downed = true
 		_recovery_generation += 1
 		var recovery_generation := _recovery_generation
@@ -290,6 +297,14 @@ static func weapon_name_for_kind(value: SurvivorKind) -> String:
 		SurvivorKind.FIGHTER: return "Shotgun"
 		SurvivorKind.SCOUT: return "Rifle"
 		_: return "Pistol"
+
+
+func status_name() -> String:
+	if is_downed:
+		return "DOWNED"
+	if injuries > 0:
+		return "INJURED"
+	return "HEALTHY"
 
 
 func _play_shot_feedback(target_position: Vector3) -> void:
