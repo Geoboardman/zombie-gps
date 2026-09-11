@@ -36,5 +36,9 @@ func _perform_interaction(player: PlayerController) -> void:
 	consume()
 	player.add_currency(gold_reward)
 	player.health.heal(heal_amount)
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.receive_healing(heal_amount)
 	collected.emit(gold_reward, heal_amount)
 	queue_free()
