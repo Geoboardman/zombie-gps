@@ -97,6 +97,10 @@ func _process(_delta: float) -> void:
 func register_enemy_defeated() -> void:
 	zombies_defeated += 1
 	_add_heat(kill_heat)
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.award_experience(1)
 
 
 func get_heat() -> float:
@@ -219,6 +223,8 @@ func _on_survivor_recruited(survivor: Survivor) -> void:
 		return
 	stage = Stage.BOSS
 	survivors_recruited += 1
+	survivor.level_gained.connect(_on_survivor_level_gained)
+	survivor.permanently_lost.connect(_on_survivor_lost)
 	_add_heat(2.0)
 	var altar := boss_altar_scene.instantiate() as BossAltarNode
 	altar.district = district
@@ -240,6 +246,10 @@ func _on_boss_requested() -> void:
 func _on_boss_defeated(reward_awarded: int) -> void:
 	stage = Stage.COMPLETE
 	bosses_defeated += 1
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.award_experience(5)
 	_add_heat(3.0)
 	_active_target = null
 	_set_objective("DISTRICT %d CLEARED" % district, "Extract safely or push deeper")
@@ -252,6 +262,14 @@ func _on_boss_defeated(reward_awarded: int) -> void:
 		ZombieSpawner.modifier_description_for_district(next_district, run_seed),
 		25,
 	)
+
+
+func _on_survivor_level_gained(survivor: Survivor) -> void:
+	_toast("%s REACHED LEVEL %d" % [survivor.survivor_name.to_upper(), survivor.level])
+
+
+func _on_survivor_lost(survivor: Survivor) -> void:
+	_toast("%s WAS LOST" % survivor.survivor_name.to_upper())
 
 
 func _on_push_deeper_requested() -> void:
