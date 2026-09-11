@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
 [ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
@@ -26,6 +26,8 @@
 [ext_resource type="Script" path="res://scripts/rest_control.gd" id="24_rest"]
 [ext_resource type="PackedScene" path="res://scenes/field_kit_node.tscn" id="25_fieldkit"]
 [ext_resource type="Script" path="res://scripts/interaction_controller.gd" id="26_interaction"]
+[ext_resource type="Script" path="res://scripts/character_visual.gd" id="27_visual"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="28_player_model"]
 
 [sub_resource type="Resource" id="Resource_style1"]
 script = ExtResource("7_style")
@@ -125,8 +127,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_1")
+
+[node name="VisualRoot" type="Node3D" parent="Player"]
+scale = Vector3(1.1, 1.1, 1.1)
+script = ExtResource("27_visual")
+
+[node name="Model" parent="Player/VisualRoot" instance=ExtResource("28_player_model")]
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("6_cam")
