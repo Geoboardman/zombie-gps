@@ -34,6 +34,10 @@ var injuries := 0
 var is_downed := false
 var _attack_timer := 0.0
 var _heal_timer := 0.0
+var _dressing_timer := 0.0
+var _dressing_remaining := 0.0
+var _dressing_accumulator := 0.0
+var _recovery_generation := 0
 var _visual: CharacterVisual
 var _health_bar: HealthBar3D
 var _role_label: Label3D
@@ -60,19 +64,46 @@ func _physics_process(delta: float) -> void:
 		return
 	_follow_player()
 	_process_weapon(delta)
+	_process_field_dressing(delta)
 	if kind == SurvivorKind.MEDIC:
 		_process_medic(delta)
 
 
 func take_damage(amount: int) -> void:
 	if not is_downed and health != null:
+		print("[Survivor] %s took %d enemy damage" % [survivor_name, amount])
 		health.take_damage(amount)
+
+
+func receive_healing(amount: int) -> void:
+	if not is_downed and health != null:
+		health.heal(amount)
+
+
+func needs_field_dressing() -> bool:
+	return is_downed or injuries > 0 or (health != null and health.current_health < health.max_health)
+
+
+func apply_field_dressing(duration: float, heal_percent: float) -> void:
+	if is_downed:
+		_recovery_generation += 1
+		is_downed = false
+		_create_health(maxi(1, int(round(float(max_health) * 0.2))))
+		_health_bar.visible = true
+		if _visual != null:
+			_visual.play_clip("Idle_Gun", 0.1, true)
+	else:
+		injuries = 0
+	_dressing_timer = duration
+	_dressing_remaining = float(max_health) * heal_percent
+	_dressing_accumulator = 0.0
+	_refresh_label()
 
 
 func award_experience(amount: int) -> void:
 	if is_downed:
 		return
-	experience += max(0, amount)
+	experience += maxi(0, amount)
 	while experience >= experience_per_level:
 		experience -= experience_per_level
 		level += 1
@@ -169,6 +200,20 @@ func _process_medic(delta: float) -> void:
 	_heal_timer = heal_interval
 
 
+func _process_field_dressing(delta: float) -> void:
+	if _dressing_timer <= 0.0 or is_downed or health == null:
+		return
+	var active_delta: float = minf(delta, _dressing_timer)
+	_dressing_timer -= active_delta
+	var heal_this_frame: float = (_dressing_remaining / maxf(_dressing_timer + active_delta, 0.001)) * active_delta
+	_dressing_remaining = maxf(0.0, _dressing_remaining - heal_this_frame)
+	_dressing_accumulator += heal_this_frame
+	if _dressing_accumulator >= 1.0:
+		var whole := int(_dressing_accumulator)
+		_dressing_accumulator -= float(whole)
+		health.heal(whole)
+
+
 func _on_health_changed(current: int, maximum: int) -> void:
 	_health_bar.set_fraction(float(current) / float(maximum))
 	if _visual != null:
@@ -179,18 +224,20 @@ func _on_health_depleted() -> void:
 	if injuries == 0:
 		injuries = 1
 		is_downed = true
+		_recovery_generation += 1
+		var recovery_generation := _recovery_generation
 		velocity = Vector3.ZERO
 		_role_label.text = "%s\nDOWNED" % survivor_name
 		_health_bar.visible = false
 		if _visual != null:
 			_visual.play_death()
-		get_tree().create_timer(downed_recovery_time).timeout.connect(_recover_injured)
+		get_tree().create_timer(downed_recovery_time).timeout.connect(_recover_injured.bind(recovery_generation))
 		return
 	_permanently_die()
 
 
-func _recover_injured() -> void:
-	if not is_inside_tree():
+func _recover_injured(recovery_generation: int) -> void:
+	if not is_inside_tree() or recovery_generation != _recovery_generation or not is_downed:
 		return
 	is_downed = false
 	_create_health(int(round(float(max_health) * 0.4)))
