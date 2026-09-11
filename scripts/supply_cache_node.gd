@@ -1,22 +1,19 @@
 class_name SupplyCacheNode
-extends MapNode
+extends InteractableMapNode
 
 signal collected
 
 @export var gold_reward := 35
 @export var heal_amount := 20
 
-var _consumed := false
-
-
 func _ready() -> void:
+	action_label = "SEARCH CACHE"
+	detail_text = "+%d gold and medical supplies" % gold_reward
 	super._ready()
 
 
-func _on_player_entered(player: PlayerController) -> void:
-	if _consumed:
-		return
-	_consumed = true
+func _perform_interaction(player: PlayerController) -> void:
+	consume()
 	player.add_currency(gold_reward)
 	player.health.heal(heal_amount)
 	collected.emit()
