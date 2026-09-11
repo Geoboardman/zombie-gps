@@ -1,8 +1,12 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/survivor.gd" id="1_srvr"]
 [ext_resource type="Script" path="res://scripts/character_visual.gd" id="2_visual"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="3_model"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis_SingleWeapon.gltf" id="3_lis"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt_SingleWeapon.gltf" id="4_matt"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="5_sam"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun_SingleWeapon.gltf" id="6_shaun"]
+[ext_resource type="Script" path="res://scripts/health_bar_3d.gd" id="7_hbar"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_srvr"]
 radius = 0.35
@@ -24,12 +28,36 @@ visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_srvr")
 
-[node name="VisualRoot" type="Node3D" parent="."]
+[node name="Visual0" type="Node3D" parent="."]
 rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(1.1, 1.1, 1.1)
 script = ExtResource("2_visual")
 
-[node name="Model" parent="VisualRoot" instance=ExtResource("3_model")]
+[node name="Model" parent="Visual0" instance=ExtResource("3_lis")]
+
+[node name="Visual1" type="Node3D" parent="."]
+visible = false
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.1, 1.1, 1.1)
+script = ExtResource("2_visual")
+
+[node name="Model" parent="Visual1" instance=ExtResource("4_matt")]
+
+[node name="Visual2" type="Node3D" parent="."]
+visible = false
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.1, 1.1, 1.1)
+script = ExtResource("2_visual")
+
+[node name="Model" parent="Visual2" instance=ExtResource("5_sam")]
+
+[node name="Visual3" type="Node3D" parent="."]
+visible = false
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.1, 1.1, 1.1)
+script = ExtResource("2_visual")
+
+[node name="Model" parent="Visual3" instance=ExtResource("6_shaun")]
 
 [node name="RoleLabel" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
@@ -39,3 +67,9 @@ font_size = 48
 pixel_size = 0.015
 outline_size = 10
 text = "Fighter"
+
+[node name="HealthBar" type="Node3D" parent="."]
+position = Vector3(0, 2.18, 0)
+script = ExtResource("7_hbar")
+width = 0.9
+height = 0.1
