@@ -179,7 +179,7 @@ func _on_health_depleted() -> void:
 		injuries = 1
 		is_downed = true
 		velocity = Vector3.ZERO
-		_role_label.text = "%s  •  DOWNED" % survivor_name
+		_role_label.text = "%s\nDOWNED" % survivor_name
 		_health_bar.visible = false
 		if _visual != null:
 			_visual.play_death()
@@ -202,7 +202,7 @@ func _recover_injured() -> void:
 func _permanently_die() -> void:
 	is_downed = true
 	remove_from_group("survivors")
-	_role_label.text = "%s  •  LOST" % survivor_name
+	_role_label.text = "%s\nLOST" % survivor_name
 	permanently_lost.emit(self)
 	var delay := _visual.play_death() if _visual != null else 0.5
 	get_tree().create_timer(delay).timeout.connect(queue_free)
@@ -218,7 +218,7 @@ func _select_appearance() -> void:
 
 
 func _refresh_label() -> void:
-	_role_label.text = "%s  •  %s  Lv.%d%s" % [survivor_name, name_for_kind(kind), level, "  INJURED" if injuries > 0 else ""]
+	_role_label.text = "%s\n%s • Lv.%d%s" % [survivor_name, name_for_kind(kind), level, " • Injured" if injuries > 0 else ""]
 
 
 static func name_for_kind(value: SurvivorKind) -> String:
