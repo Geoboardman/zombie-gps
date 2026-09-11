@@ -24,9 +24,11 @@ const TOP_MARGIN := 22.0 # room reserved above the circle for the keybind badge
 const NAME_HEIGHT := 18.0
 
 var _cooldown_fraction := 0.0 # 0 = ready, 1 = just used
+var _show_keyboard_hint := true
 
 
 func _ready() -> void:
+	_show_keyboard_hint = not OS.has_feature("mobile")
 	custom_minimum_size = Vector2(radius * 2.0, radius * 2.0 + TOP_MARGIN + NAME_HEIGHT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
@@ -57,15 +59,18 @@ func _draw() -> void:
 	if _cooldown_fraction > 0.0:
 		base_color = icon_color.darkened(0.35) # dim the whole icon while on cooldown, on top of the wipe overlay
 
+	draw_circle(center, radius + 5.0, Color(0.018, 0.055, 0.068, 0.92))
+	draw_arc(center, radius + 5.0, 0.0, TAU, 48, Color(0.25, 0.62, 0.68, 0.65), 2.0)
 	draw_circle(center, radius, base_color)
-	draw_arc(center, radius, 0.0, TAU, 48, Color(1, 1, 1, 0.6), 2.0) # thin border ring
+	draw_arc(center, radius, 0.0, TAU, 48, Color(0.85, 1, 1, 0.82), 2.0)
 
 	_draw_glyph(center)
 
 	if _cooldown_fraction > 0.0:
 		_draw_cooldown_wedge(center)
 
-	_draw_keybind_badge()
+	if _show_keyboard_hint:
+		_draw_keybind_badge()
 	draw_string(
 		ThemeDB.fallback_font, Vector2(0.0, radius * 2.0 + TOP_MARGIN + 15.0),
 		ability_name, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 12, Color.WHITE
