@@ -24,7 +24,7 @@ func _process(_delta: float) -> void:
 	if _current == null:
 		_set_visible(false)
 		return
-	_button.text = _current.get_action_label()
+	_button.text = "TAP  •  %s" % _current.get_action_label()
 	_detail.text = _current.get_detail_text()
 	_set_visible(true)
 
