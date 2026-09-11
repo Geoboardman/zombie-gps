@@ -114,7 +114,11 @@ func _physics_process(delta: float) -> void:
 			if _visual != null:
 				_visual.play_once("Punch", "Idle_Attack", 0.5)
 			var damage := int(attack_damage * (enrage_damage_multiplier if _enraged else 1.0))
-			attacked_player.emit(damage)
+			var survivor_target := _nearest_survivor_in_range(attack_range * 1.4)
+			if survivor_target != null:
+				survivor_target.take_damage(damage)
+			else:
+				attacked_player.emit(damage)
 			_attack_timer = attack_cooldown
 
 
@@ -168,6 +172,24 @@ func _resolve_slam() -> void:
 
 	if target != null and global_position.distance_to(target.global_position) <= slam_radius:
 		attacked_player.emit(slam_damage)
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null and survivor.can_be_attacked() and global_position.distance_to(survivor.global_position) <= slam_radius:
+			survivor.take_damage(slam_damage)
+
+
+func _nearest_survivor_in_range(maximum_distance: float) -> Survivor:
+	var nearest: Survivor = null
+	var nearest_distance := maximum_distance
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var candidate := node as Survivor
+		if candidate == null or not candidate.can_be_attacked():
+			continue
+		var distance := global_position.distance_to(candidate.global_position)
+		if distance <= nearest_distance:
+			nearest = candidate
+			nearest_distance = distance
+	return nearest
 
 
 func _on_health_changed(current: int, max_hp: int) -> void:
