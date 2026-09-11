@@ -367,6 +367,7 @@ func _spawn_grenade_telegraph(target_position: Vector3) -> void:
 	mesh.bottom_radius = grenade_radius
 	mesh.height = 0.03
 	disc.mesh = mesh
+	get_tree().current_scene.add_child(disc)
 	disc.global_position = target_position + Vector3(0.0, 0.08, 0.0)
 	disc.scale = Vector3(0.1, 1.0, 0.1)
 	var material := StandardMaterial3D.new()
@@ -375,7 +376,6 @@ func _spawn_grenade_telegraph(target_position: Vector3) -> void:
 	material.emission = Color(1.0, 0.18, 0.0)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	disc.material_override = material
-	get_tree().current_scene.add_child(disc)
 	var tween := disc.create_tween()
 	tween.tween_property(disc, "scale", Vector3.ONE, grenade_fuse)
 	tween.tween_callback(_explode_grenade.bind(target_position, grenade_radius, grenade_damage, disc, true))
@@ -406,13 +406,13 @@ func _spawn_explosion_ring(center: Vector3, radius: float, color: Color) -> void
 	mesh.bottom_radius = 1.0
 	mesh.height = 0.04
 	ring.mesh = mesh
+	get_tree().current_scene.add_child(ring)
 	ring.global_position = center + Vector3(0.0, 0.1, 0.0)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.emission_enabled = true
 	material.emission = color
 	ring.material_override = material
-	get_tree().current_scene.add_child(ring)
 	var tween := ring.create_tween()
 	tween.tween_property(ring, "scale", Vector3(radius, 1.0, radius), 0.22)
 	tween.tween_callback(ring.queue_free)
