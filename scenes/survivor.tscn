@@ -1,12 +1,15 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/survivor.gd" id="1_srvr"]
 [ext_resource type="Script" path="res://scripts/character_visual.gd" id="2_visual"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis_SingleWeapon.gltf" id="3_lis"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt_SingleWeapon.gltf" id="4_matt"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="5_sam"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun_SingleWeapon.gltf" id="6_shaun"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis.gltf" id="3_lis"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt.gltf" id="4_matt"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam.gltf" id="5_sam"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun.gltf" id="6_shaun"]
 [ext_resource type="Script" path="res://scripts/health_bar_3d.gd" id="7_hbar"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/weapons/Pistol.gltf" id="8_pistol"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/weapons/Rifle.gltf" id="9_rifle"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/weapons/Shotgun.gltf" id="10_shotgun"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_srvr"]
 radius = 0.35
@@ -18,6 +21,9 @@ height = 1.7
 
 [node name="Survivor" type="CharacterBody3D"]
 script = ExtResource("1_srvr")
+pistol_scene = ExtResource("8_pistol")
+rifle_scene = ExtResource("9_rifle")
+shotgun_scene = ExtResource("10_shotgun")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
