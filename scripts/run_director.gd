@@ -14,6 +14,7 @@ enum Stage { WAITING_FOR_MAP, FIRST_OUTBREAK, FIELD_KIT, CHOOSE_UPGRADE, SUPPLY,
 @export var toast_label_path: NodePath
 @export var upgrade_choice_path: NodePath
 @export var victory_screen_path: NodePath
+@export var zombie_spawner_path: NodePath
 @export var starter_zombie_scene: PackedScene
 @export var field_kit_scene: PackedScene
 @export var supply_cache_scene: PackedScene
@@ -45,6 +46,7 @@ var _objective_detail: Label
 var _toast_label: Label
 var _upgrade_choice: UpgradeChoiceUI
 var _victory_screen: BossVictoryScreen
+var _zombie_spawner: ZombieSpawner
 var _active_target: Node3D
 var _last_heat_position := Vector3.ZERO
 var _last_tracking_position := Vector3.ZERO
@@ -60,6 +62,8 @@ func _ready() -> void:
 	_toast_label = get_node(toast_label_path)
 	_upgrade_choice = get_node(upgrade_choice_path)
 	_victory_screen = get_node(victory_screen_path)
+	_zombie_spawner = get_node(zombie_spawner_path)
+	_zombie_spawner.begin_district(district)
 	_last_heat_position = _player.global_position
 	_last_tracking_position = _player.global_position
 
@@ -209,29 +213,45 @@ func _on_boss_requested() -> void:
 	_set_objective("DEFEAT THE DISTRICT %d BOSS" % district, "Watch the ground and evade its slam")
 
 
-func _on_boss_defeated() -> void:
+func _on_boss_defeated(reward_awarded: int) -> void:
 	stage = Stage.COMPLETE
 	bosses_defeated += 1
 	_add_heat(3.0)
 	_active_target = null
 	_set_objective("DISTRICT %d CLEARED" % district, "Extract safely or push deeper")
+	var next_district := district + 1
+	_victory_screen.show_victory(
+		reward_awarded,
+		_player.currency,
+		district,
+		ZombieSpawner.modifier_name_for_district(next_district),
+		ZombieSpawner.modifier_description_for_district(next_district),
+		25,
+	)
 
 
 func _on_push_deeper_requested() -> void:
 	district += 1
 	stage = Stage.SUPPLY
 	_player.health.heal(int(_player.health.max_health * 0.25))
+	_player.currency_gain_multiplier += 0.25
+	_zombie_spawner.begin_district(district)
 	_add_heat(2.0 + district)
 	_spawn_supply(supply_distance + float(district - 1) * 15.0)
-	_set_objective("DISTRICT %d — PUSH DEEPER" % district, _detail_for_stage())
-	_toast("DISTRICT %d  •  INFECTION INTENSIFYING" % district)
+	_set_objective(
+		"DISTRICT %d — %s" % [district, ZombieSpawner.modifier_name_for_district(district)],
+		"%s • All gold rewards +25%%" % ZombieSpawner.modifier_description_for_district(district)
+	)
+	_toast("%s  •  GOLD REWARDS INCREASED" % ZombieSpawner.modifier_name_for_district(district))
 
 
 func _on_extract_requested() -> void:
+	var profile := RunProfile.record_extraction(_player.currency, district)
 	_victory_screen.show_extraction_summary(
-		"DISTRICT REACHED: %d\nDISTANCE: %dm\nZOMBIES DEFEATED: %d\nSURVIVORS RECRUITED: %d\nBOSSES DEFEATED: %d\nGOLD EXTRACTED: %d" % [
+		"DISTRICT REACHED: %d\nDISTANCE: %dm\nZOMBIES DEFEATED: %d\nSURVIVORS RECRUITED: %d\nBOSSES DEFEATED: %d\nGOLD BANKED: %d\n\nCAREER GOLD: %d  •  BEST DISTRICT: %d" % [
 			district, int(total_distance_meters), zombies_defeated,
 			survivors_recruited, bosses_defeated, _player.currency,
+			int(profile["total_extracted_gold"]), int(profile["best_district"]),
 		]
 	)
 
