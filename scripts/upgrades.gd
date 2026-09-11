@@ -180,6 +180,20 @@ static func choice_description(type: Type) -> String:
 		_: return "Unknown effect"
 
 
+static func category(type: Type) -> String:
+	match type:
+		Type.ATTACK_DAMAGE, Type.ATTACK_SPEED, Type.ATTACK_RANGE, Type.DOUBLE_TAP, Type.PIERCING_ROUNDS, Type.EXECUTIONER:
+			return "WEAPON"
+		Type.MAX_HEALTH, Type.REGEN, Type.LIFESTEAL, Type.ARMOR, Type.ADRENAL_RESPONSE:
+			return "SURVIVAL"
+		Type.KNOCKBACK_POWER, Type.AURA_POWER, Type.BURNING_PRESENCE, Type.CLUSTER_GRENADE:
+			return "ABILITY"
+		Type.GOLD_GAIN:
+			return "UTILITY"
+		_:
+			return "OTHER"
+
+
 static func random_choices(count: int) -> Array[int]:
 	var pool: Array[int] = []
 	pool.assign(Type.values())
