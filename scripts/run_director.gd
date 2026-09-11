@@ -52,6 +52,7 @@ var _last_heat_position := Vector3.ZERO
 var _last_tracking_position := Vector3.ZERO
 var _opening_started := false
 var _toast_tween: Tween
+var _choice_after_cache := false
 
 
 func _ready() -> void:
@@ -71,7 +72,7 @@ func _ready() -> void:
 	overpass.features_loaded.connect(_on_map_ready)
 	overpass.fetch_failed.connect(_on_map_failed)
 	_gps.location_updated.connect(_on_location_updated)
-	_upgrade_choice.upgrade_chosen.connect(_on_starter_upgrade_chosen)
+	_upgrade_choice.upgrade_chosen.connect(_on_upgrade_chosen)
 	_victory_screen.push_deeper_requested.connect(_on_push_deeper_requested)
 	_victory_screen.extract_requested.connect(_on_extract_requested)
 
@@ -151,6 +152,7 @@ func _on_field_kit_opened() -> void:
 	if stage != Stage.FIELD_KIT:
 		return
 	stage = Stage.CHOOSE_UPGRADE
+	_choice_after_cache = false
 	_active_target = null
 	_set_objective("FIELD KIT RECOVERED", "Choose one piece of equipment")
 	_toast("FIELD KIT RECOVERED")
@@ -161,7 +163,11 @@ func _on_field_kit_opened() -> void:
 	])
 
 
-func _on_starter_upgrade_chosen(type: Upgrades.Type) -> void:
+func _on_upgrade_chosen(type: Upgrades.Type) -> void:
+	if _choice_after_cache:
+		_choice_after_cache = false
+		_begin_survivor_stage(type)
+		return
 	stage = Stage.SUPPLY
 	opening_completed.emit()
 	_spawn_supply(supply_distance)
@@ -180,15 +186,24 @@ func _spawn_supply(distance: float) -> void:
 func _on_supply_collected() -> void:
 	if stage != Stage.SUPPLY:
 		return
-	stage = Stage.SURVIVOR
 	_add_heat(1.0)
+	stage = Stage.CHOOSE_UPGRADE
+	_choice_after_cache = true
+	_active_target = null
+	_set_objective("CACHE EQUIPMENT FOUND", "Choose one upgrade before moving on")
+	_toast("CACHE SEARCHED  •  +35 GOLD  •  EQUIPMENT FOUND")
+	_upgrade_choice.show_choices(_player, Upgrades.random_choices(3), "SUPPLY CACHE — CHOOSE ONE")
+
+
+func _begin_survivor_stage(chosen_type: Upgrades.Type) -> void:
+	stage = Stage.SURVIVOR
 	var survivor_node := survivor_node_scene.instantiate() as SurvivorNode
 	get_tree().current_scene.add_child(survivor_node)
 	survivor_node.global_position = _point_ahead(survivor_distance + float(district - 1) * 10.0)
 	survivor_node.recruited.connect(_on_survivor_recruited)
 	_active_target = survivor_node
 	_set_objective("SURVIVOR DISTRESS SIGNAL", _detail_for_stage())
-	_toast("CACHE SEARCHED  •  +35 GOLD  •  SURVIVOR SIGNAL FOUND")
+	_toast("%s EQUIPPED  •  SURVIVOR SIGNAL FOUND" % Upgrades.display_name(chosen_type).to_upper())
 
 
 func _on_survivor_recruited(survivor: Survivor) -> void:
