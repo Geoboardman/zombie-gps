@@ -8,7 +8,7 @@ signal collected
 
 func _ready() -> void:
 	action_label = "SEARCH CACHE"
-	detail_text = "+%d gold and medical supplies" % gold_reward
+	detail_text = "+%d GOLD  •  HEALS %d" % [gold_reward, heal_amount]
 	super._ready()
 
 
