@@ -35,6 +35,7 @@ var player: PlayerController # set by whoever recruits this survivor (SurvivorNo
 
 var _attack_timer := 0.0
 var _heal_timer := 0.0
+var _visual: CharacterVisual
 
 
 func _ready() -> void:
@@ -50,6 +51,9 @@ func _ready() -> void:
 
 	var label := get_node("RoleLabel") as Label3D
 	label.text = name_for_kind(kind)
+	_visual = get_node_or_null("VisualRoot") as CharacterVisual
+	if _visual != null:
+		_visual.play_clip("Idle_Gun")
 
 	if kind == SurvivorKind.SCOUT and player != null:
 		player.currency_gain_multiplier += currency_bonus
@@ -82,8 +86,12 @@ func _follow_player(_delta: float) -> void:
 		velocity = move_dir * follow_speed
 		move_and_slide()
 		look_at(global_position + move_dir, Vector3.UP)
+		if _visual != null:
+			_visual.play_clip("Walk_Gun")
 	else:
 		velocity = Vector3.ZERO
+		if _visual != null:
+			_visual.play_clip("Idle_Gun")
 
 
 func _process_fighter(delta: float) -> void:
@@ -107,6 +115,7 @@ func _process_fighter(delta: float) -> void:
 		nearest.take_damage(attack_damage)
 		_attack_timer = attack_interval
 		_play_attack_lunge(nearest.global_position)
+		_play_shot_feedback(nearest.global_position)
 
 
 func _process_medic(delta: float) -> void:
@@ -150,8 +159,43 @@ static func color_for_kind(k: SurvivorKind) -> Color:
 func _play_attack_lunge(target_pos: Vector3) -> void:
 	look_at(Vector3(target_pos.x, global_position.y, target_pos.z), Vector3.UP)
 
+	if _visual != null:
+		_visual.recoil()
+		return
 	var mesh_instance := get_node("MeshInstance3D") as MeshInstance3D
 	var original_scale := mesh_instance.scale
 	mesh_instance.scale = original_scale * 1.25
 	var tween := create_tween()
 	tween.tween_property(mesh_instance, "scale", original_scale, 0.15)
+
+
+func _play_shot_feedback(target_pos: Vector3) -> void:
+	var start := global_position + Vector3(0.0, 1.15, 0.0)
+	var end := target_pos + Vector3(0.0, 0.9, 0.0)
+	var tracer := MeshInstance3D.new()
+	var line_mesh := ImmediateMesh.new()
+	line_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	line_mesh.surface_add_vertex(start)
+	line_mesh.surface_add_vertex(end)
+	line_mesh.surface_end()
+	tracer.mesh = line_mesh
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.82, 0.25)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.55, 0.1)
+	tracer.material_override = material
+	get_tree().current_scene.add_child(tracer)
+	get_tree().create_timer(0.07).timeout.connect(tracer.queue_free)
+
+	var flash := MeshInstance3D.new()
+	var flash_mesh := SphereMesh.new()
+	flash_mesh.radius = 0.12
+	flash_mesh.height = 0.24
+	flash.mesh = flash_mesh
+	flash.material_override = material
+	get_tree().current_scene.add_child(flash)
+	flash.global_position = start
+	var tween := flash.create_tween()
+	tween.tween_property(flash, "scale", Vector3.ZERO, 0.1)
+	tween.tween_callback(flash.queue_free)
