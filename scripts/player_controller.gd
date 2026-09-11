@@ -4,7 +4,7 @@ extends CharacterBody3D
 # Keeps the player's visual position locked to GPSManager's reported
 # location, faces movement direction, and owns the player's health,
 # currency, and combat loop. Auto-attack and the damage aura are still
-# fully passive. Knockback Pulse, Second Wind, and Overcharge are now
+# fully passive. Stasis Pulse, Field Dressing, and Frag Grenade are
 # player-triggered abilities on cooldowns instead -- single key tap each,
 # no aiming or held input, so it stays glance-and-tap rather than
 # something that demands sustained screen attention while walking.
@@ -13,6 +13,7 @@ extends CharacterBody3D
 @export var hud_label_path: NodePath # optional: a Label to show "HP: x/y"
 @export var health_bar_path: NodePath # optional: a ProgressBar for mobile-readable health
 @export var currency_label_path: NodePath # optional: a Label to show currency
+@export var build_label_path: NodePath # optional: compact list of acquired upgrades
 
 @export_group("Health & Attack")
 @export var max_health := 100
@@ -31,27 +32,35 @@ extends CharacterBody3D
 @export var aura_damage_per_tick := 3
 @export var aura_tick_interval := 0.5
 
-@export_group("Ability: Knockback Pulse")
-@export var knockback_cooldown := 4.0
-@export var knockback_radius := 4.0
-@export var knockback_force := 2.5
-@export var knockback_action := "ability_1" # Input Map action -- default binding: Q
+@export_group("Ability: Stasis Pulse")
+@export var stasis_cooldown := 7.0
+@export var stasis_radius := 4.0
+@export var stasis_duration := 2.5
+@export var stasis_action := "ability_1"
 
-@export_group("Ability: Second Wind")
-@export var second_wind_cooldown := 15.0
-@export var second_wind_heal_percent := 0.25
-@export var second_wind_action := "ability_2" # Input Map action -- default binding: E
+@export_group("Ability: Field Dressing")
+@export var field_dressing_cooldown := 18.0
+@export var field_dressing_heal_percent := 0.35
+@export var field_dressing_duration := 8.0
+@export var field_dressing_action := "ability_2"
 
-@export_group("Ability: Overcharge")
-@export var overcharge_cooldown := 12.0
-@export var overcharge_duration := 5.0
-@export var overcharge_damage_multiplier := 1.5
-@export var overcharge_interval_multiplier := 0.7 # lower = faster attacks
-@export var overcharge_action := "ability_3" # Input Map action -- default binding: R
+@export_group("Ability: Frag Grenade")
+@export var grenade_cooldown := 10.0
+@export var grenade_target_range := 10.0
+@export var grenade_radius := 3.0
+@export var grenade_damage := 35
+@export var grenade_fuse := 0.65
+@export var grenade_action := "ability_3"
 
 var health: Health
 var currency := 0
 var currency_gain_multiplier := 1.0
+var double_tap_level := 0
+var piercing_targets := 0
+var execution_damage_multiplier := 1.0
+var aura_bonus_damage := 0
+var adrenaline_attack_multiplier := 1.0
+var grenade_cluster_count := 0
 
 var _gps: GPSManager
 var _last_position: Vector3
@@ -59,16 +68,19 @@ var _attack_timer := 0.0
 var _aura_timer: float
 var _invulnerable_timer := 0.0
 var _regen_accumulator := 0.0 # fractional HP banked here until it crosses a whole point
+var _field_dressing_timer := 0.0
+var _field_dressing_remaining := 0.0
 var _ability_cooldowns: Dictionary = {} # Abilities.Type -> float remaining
+var _upgrade_counts: Dictionary = {}
 var _hud_label: Label
 var _health_bar: ProgressBar
 var _currency_label: Label
+var _build_label: Label
 var _mesh_material: StandardMaterial3D
 
 const BASE_PLAYER_COLOR := Color(0.85, 0.85, 0.88)
-const KNOCKBACK_FLASH_COLOR := Color(0.3, 0.6, 0.95)
-const SECOND_WIND_FLASH_COLOR := Color(0.3, 0.9, 0.4)
-const OVERCHARGE_COLOR := Color(0.95, 0.55, 0.15)
+const STASIS_FLASH_COLOR := Color(0.3, 0.6, 0.95)
+const DRESSING_COLOR := Color(0.3, 0.9, 0.4)
 
 
 func _ready() -> void:
@@ -106,6 +118,9 @@ func _ready() -> void:
 	if currency_label_path != NodePath(""):
 		_currency_label = get_node(currency_label_path)
 		_update_currency_label()
+	if build_label_path != NodePath(""):
+		_build_label = get_node(build_label_path)
+		_update_build_label()
 
 
 func _process(delta: float) -> void:
@@ -122,6 +137,7 @@ func _process(delta: float) -> void:
 		_invulnerable_timer -= delta
 
 	_apply_regen(delta)
+	_process_field_dressing(delta)
 	_process_abilities(delta)
 
 
@@ -140,12 +156,19 @@ func _try_attack() -> void:
 			nearest_dist = dist
 
 	if nearest != null:
-		nearest.take_damage(attack_damage)
-		_attack_timer = attack_interval
+		var damage := _effective_attack_damage(nearest)
+		nearest.take_damage(damage)
+		_attack_timer = attack_interval * _current_attack_interval_multiplier()
 		_play_attack_lunge(nearest.global_position)
+		_apply_piercing_hits(nearest)
+		if double_tap_level > 0:
+			get_tree().create_timer(0.12).timeout.connect(func():
+				if is_instance_valid(nearest):
+					nearest.take_damage(int(damage * (0.5 + 0.1 * double_tap_level)))
+			)
 
 		if lifesteal_percent > 0.0:
-			var heal_amount := int(attack_damage * lifesteal_percent)
+			var heal_amount := int(damage * lifesteal_percent)
 			if heal_amount > 0:
 				health.heal(heal_amount)
 
@@ -158,7 +181,34 @@ func _apply_aura_damage() -> void:
 		if enemy == null:
 			continue
 		if global_position.distance_to(enemy.global_position) <= aura_radius:
-			enemy.take_damage(aura_damage_per_tick)
+			enemy.take_damage(aura_damage_per_tick + aura_bonus_damage)
+
+
+func _effective_attack_damage(enemy: Enemy) -> int:
+	if enemy.health != null and float(enemy.health.current_health) / float(enemy.health.max_health) <= 0.3:
+		return int(attack_damage * execution_damage_multiplier)
+	return attack_damage
+
+
+func _current_attack_interval_multiplier() -> float:
+	if float(health.current_health) / float(health.max_health) <= 0.35:
+		return adrenaline_attack_multiplier
+	return 1.0
+
+
+func _apply_piercing_hits(primary: Enemy) -> void:
+	if piercing_targets <= 0:
+		return
+	var hits := 0
+	for node in get_tree().get_nodes_in_group("zombies"):
+		var enemy := node as Enemy
+		if enemy == null or enemy == primary:
+			continue
+		if global_position.distance_to(enemy.global_position) <= attack_range + 1.5:
+			enemy.take_damage(int(attack_damage * 0.6))
+			hits += 1
+			if hits >= piercing_targets:
+				return
 
 
 # Small passive HP trickle, always on. Accumulates fractionally since
@@ -175,6 +225,22 @@ func _apply_regen(delta: float) -> void:
 		health.heal(whole)
 
 
+func _process_field_dressing(delta: float) -> void:
+	if _field_dressing_timer <= 0.0:
+		return
+	var active_delta := min(delta, _field_dressing_timer)
+	_field_dressing_timer -= active_delta
+	var heal_this_frame := (_field_dressing_remaining / max(_field_dressing_timer + active_delta, 0.001)) * active_delta
+	_regen_accumulator += heal_this_frame
+	_field_dressing_remaining = max(0.0, _field_dressing_remaining - heal_this_frame)
+	if _regen_accumulator >= 1.0:
+		var whole := int(_regen_accumulator)
+		_regen_accumulator -= whole
+		health.heal(whole)
+	if _field_dressing_timer <= 0.0 and _mesh_material != null:
+		_mesh_material.albedo_color = BASE_PLAYER_COLOR
+
+
 #region Abilities
 
 func _process_abilities(delta: float) -> void:
@@ -182,12 +248,12 @@ func _process_abilities(delta: float) -> void:
 		if _ability_cooldowns[type] > 0.0:
 			_ability_cooldowns[type] -= delta
 
-	if Input.is_action_just_pressed(knockback_action):
-		try_activate_ability(Abilities.Type.KNOCKBACK_PULSE)
-	if Input.is_action_just_pressed(second_wind_action):
-		try_activate_ability(Abilities.Type.SECOND_WIND)
-	if Input.is_action_just_pressed(overcharge_action):
-		try_activate_ability(Abilities.Type.OVERCHARGE)
+	if Input.is_action_just_pressed(stasis_action):
+		try_activate_ability(Abilities.Type.STASIS_PULSE)
+	if Input.is_action_just_pressed(field_dressing_action):
+		try_activate_ability(Abilities.Type.FIELD_DRESSING)
+	if Input.is_action_just_pressed(grenade_action):
+		try_activate_ability(Abilities.Type.FRAG_GRENADE)
 
 
 # Public so both keyboard input (above) and the on-screen AbilityBar
@@ -238,60 +304,118 @@ func _play_attack_lunge(target_pos: Vector3) -> void:
 	tween.tween_property(mesh_instance, "scale", original_scale, 0.15)
 
 
-# Shoves back any zombie within knockback_radius and interrupts their
-# chase, buying breathing room during a swarm on demand. Flashes blue
-# regardless of whether any zombies were actually in range, so the
-# ability always gives SOME confirmation it fired.
-func knockback_pulse() -> void:
-	_flash_color(KNOCKBACK_FLASH_COLOR, 0.25)
-
+# Stops nearby zombies in attack range; bosses are slowed rather than frozen.
+func stasis_pulse() -> void:
+	_flash_color(STASIS_FLASH_COLOR, 0.25)
 	for node in get_tree().get_nodes_in_group("zombies"):
-		var zombie := node as Zombie
-		if zombie == null:
+		var enemy := node as Enemy
+		if enemy == null:
 			continue
-
-		var offset := zombie.global_position - global_position
-		offset.y = 0.0
-		var dist := offset.length()
-		if dist > knockback_radius:
-			continue
-
-		var direction := offset.normalized() if dist > 0.0001 else Vector3.RIGHT
-		zombie.apply_knockback(direction, knockback_force)
+		if global_position.distance_to(enemy.global_position) <= stasis_radius:
+			enemy.apply_stasis(stasis_duration, 0.4 if enemy is Boss else 0.0)
 
 
-# Instant emergency heal. Flashes green so it's obvious something
-# happened, not just a number ticking up on the HUD.
-func second_wind() -> void:
-	var heal_amount := int(health.max_health * second_wind_heal_percent)
-	health.heal(heal_amount)
-	_flash_color(SECOND_WIND_FLASH_COLOR, 0.4)
-
-
-# Temporary offense boost. Tints the player orange for the whole
-# duration -- not just a flash -- so it stays visibly obvious the buff
-# is active the entire time, not just at the moment of activation.
-# Reverts after overcharge_duration -- note this stores and restores
-# exact values, so buying an attack upgrade WHILE overcharge is active
-# will get overwritten when it reverts. A known, acceptable limitation
-# for now; a proper multiplicative-buff-stack system is a later fix,
-# not urgent for this pass.
-func overcharge() -> void:
-	var original_damage := attack_damage
-	var original_interval := attack_interval
-
-	attack_damage = int(attack_damage * overcharge_damage_multiplier)
-	attack_interval = max(0.1, attack_interval * overcharge_interval_multiplier)
-
+# Starts a visible heal-over-time window instead of erasing danger instantly.
+func field_dressing() -> void:
+	_field_dressing_timer = field_dressing_duration
+	_field_dressing_remaining = health.max_health * field_dressing_heal_percent
 	if _mesh_material != null:
-		_mesh_material.albedo_color = OVERCHARGE_COLOR
+		_mesh_material.albedo_color = DRESSING_COLOR
 
-	get_tree().create_timer(overcharge_duration).timeout.connect(func():
-		attack_damage = original_damage
-		attack_interval = original_interval
-		if _mesh_material != null:
-			_mesh_material.albedo_color = BASE_PLAYER_COLOR
-	)
+
+func is_field_dressing_active() -> bool:
+	return _field_dressing_timer > 0.0
+
+
+# Auto-targets the densest nearby cluster, so it stays a single safe tap.
+func frag_grenade() -> void:
+	var target := _densest_enemy_position()
+	if target == null:
+		return
+	_spawn_grenade_telegraph(target)
+
+
+func has_grenade_target() -> bool:
+	return _densest_enemy_position() != null
+
+
+func _densest_enemy_position() -> Variant:
+	var enemies: Array[Enemy] = []
+	for node in get_tree().get_nodes_in_group("zombies"):
+		var enemy := node as Enemy
+		if enemy != null and global_position.distance_to(enemy.global_position) <= grenade_target_range:
+			enemies.append(enemy)
+	if enemies.is_empty():
+		return null
+	var best := enemies[0]
+	var best_count := 0
+	for candidate in enemies:
+		var count := 0
+		for other in enemies:
+			if candidate.global_position.distance_to(other.global_position) <= grenade_radius:
+				count += 1
+		if count > best_count:
+			best = candidate
+			best_count = count
+	return best.global_position
+
+
+func _spawn_grenade_telegraph(target_position: Vector3) -> void:
+	var disc := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = grenade_radius
+	mesh.bottom_radius = grenade_radius
+	mesh.height = 0.03
+	disc.mesh = mesh
+	disc.global_position = target_position + Vector3(0.0, 0.08, 0.0)
+	disc.scale = Vector3(0.1, 1.0, 0.1)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(1.0, 0.35, 0.05, 0.55)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.18, 0.0)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	disc.material_override = material
+	get_tree().current_scene.add_child(disc)
+	var tween := disc.create_tween()
+	tween.tween_property(disc, "scale", Vector3.ONE, grenade_fuse)
+	tween.tween_callback(_explode_grenade.bind(target_position, grenade_radius, grenade_damage, disc, true))
+
+
+func _explode_grenade(center: Vector3, radius: float, damage: int, disc: MeshInstance3D, allow_clusters: bool) -> void:
+	if is_instance_valid(disc):
+		disc.queue_free()
+	for node in get_tree().get_nodes_in_group("zombies"):
+		var enemy := node as Enemy
+		if enemy != null and enemy.global_position.distance_to(center) <= radius:
+			enemy.take_damage(damage)
+	_spawn_explosion_ring(center, radius, Color(1.0, 0.5, 0.08))
+	if not allow_clusters:
+		return
+	for i in range(grenade_cluster_count):
+		var angle := TAU * float(i) / float(max(1, grenade_cluster_count))
+		var child_center := center + Vector3(cos(angle), 0.0, sin(angle)) * radius
+		get_tree().create_timer(0.18).timeout.connect(
+			_explode_grenade.bind(child_center, radius * 0.55, int(damage * 0.45), null, false)
+		)
+
+
+func _spawn_explosion_ring(center: Vector3, radius: float, color: Color) -> void:
+	var ring := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 1.0
+	mesh.bottom_radius = 1.0
+	mesh.height = 0.04
+	ring.mesh = mesh
+	ring.global_position = center + Vector3(0.0, 0.1, 0.0)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	ring.material_override = material
+	get_tree().current_scene.add_child(ring)
+	var tween := ring.create_tween()
+	tween.tween_property(ring, "scale", Vector3(radius, 1.0, radius), 0.22)
+	tween.tween_callback(ring.queue_free)
 
 #endregion
 
@@ -341,6 +465,25 @@ func _update_hud() -> void:
 func _update_currency_label() -> void:
 	if _currency_label:
 		_currency_label.text = "◆  %d" % currency
+
+
+func record_upgrade(type: Upgrades.Type) -> void:
+	_upgrade_counts[type] = int(_upgrade_counts.get(type, 0)) + 1
+	_update_build_label()
+
+
+func _update_build_label() -> void:
+	if _build_label == null:
+		return
+	if _upgrade_counts.is_empty():
+		_build_label.visible = false
+		return
+	var parts: PackedStringArray = []
+	for type in _upgrade_counts:
+		var count := int(_upgrade_counts[type])
+		parts.append("%s%s" % [Upgrades.short_name(type as Upgrades.Type), " x%d" % count if count > 1 else ""])
+	_build_label.text = "BUILD  •  " + "  •  ".join(parts)
+	_build_label.visible = true
 
 
 func _on_died() -> void:
