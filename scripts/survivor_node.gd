@@ -11,6 +11,7 @@ signal recruited(survivor: Survivor)
 
 var _chosen_kind: Survivor.SurvivorKind
 var _label: Label3D
+var _visual: CharacterVisual
 
 
 func _ready() -> void:
@@ -21,6 +22,8 @@ func _ready() -> void:
 	_chosen_kind = kinds[randi() % kinds.size()] as Survivor.SurvivorKind
 
 	_label = get_node("RecruitLabel") as Label3D
+	_visual = get_node("VisualRoot") as CharacterVisual
+	_visual.play_clip("Idle_Gun")
 	_label.text = "Recruit\n%s" % Survivor.name_for_kind(_chosen_kind)
 	action_label = "RECRUIT %s" % Survivor.name_for_kind(_chosen_kind).to_upper()
 	detail_text = _description_for_kind(_chosen_kind)
