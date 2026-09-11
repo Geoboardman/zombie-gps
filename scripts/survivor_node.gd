@@ -1,6 +1,10 @@
 class_name SurvivorNode
 extends InteractableMapNode
 
+const PISTOL_SCENE := preload("res://assets/quaternius/weapons/Pistol.gltf")
+const RIFLE_SCENE := preload("res://assets/quaternius/weapons/Rifle.gltf")
+const SHOTGUN_SCENE := preload("res://assets/quaternius/weapons/Shotgun.gltf")
+
 signal recruited(survivor: Survivor)
 
 # Free to recruit -- finding someone alive is the reward, no currency
@@ -30,6 +34,7 @@ func _ready() -> void:
 			preview.visible = index == _chosen_appearance
 	_visual = get_node("Visual%d" % _chosen_appearance) as CharacterVisual
 	_visual.play_clip("Idle_Gun")
+	_visual.attach_weapon(_weapon_scene_for_kind(_chosen_kind))
 	var recruit_name: String = Survivor.NAMES[_chosen_appearance]
 	_label.text = "%s\n%s" % [recruit_name, Survivor.name_for_kind(_chosen_kind)]
 	action_label = "RECRUIT %s" % recruit_name.to_upper()
@@ -66,3 +71,10 @@ func _perform_interaction(player: PlayerController) -> void:
 
 func _description_for_kind(value: Survivor.SurvivorKind) -> String:
 	return "%s — %s" % [Survivor.name_for_kind(value), Survivor.description_for_kind(value)]
+
+
+func _weapon_scene_for_kind(value: Survivor.SurvivorKind) -> PackedScene:
+	match value:
+		Survivor.SurvivorKind.FIGHTER: return SHOTGUN_SCENE
+		Survivor.SurvivorKind.SCOUT: return RIFLE_SCENE
+		_: return PISTOL_SCENE
