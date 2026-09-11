@@ -92,14 +92,14 @@ func _create_card(survivor: Survivor) -> void:
 	button.add_child(badge)
 	var name_label := Label.new()
 	name_label.position = Vector2(54.0, 5.0)
-	name_label.size = Vector2(82.0, 21.0)
+	name_label.size = Vector2(74.0, 21.0)
 	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", Color(0.94, 0.98, 1.0))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(name_label)
 	var level_label := Label.new()
-	level_label.position = Vector2(136.0, 6.0)
-	level_label.size = Vector2(42.0, 19.0)
+	level_label.position = Vector2(130.0, 6.0)
+	level_label.size = Vector2(48.0, 19.0)
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	level_label.add_theme_font_size_override("font_size", 11)
 	level_label.add_theme_color_override("font_color", Color(0.7, 0.82, 0.86))
@@ -107,30 +107,34 @@ func _create_card(survivor: Survivor) -> void:
 	button.add_child(level_label)
 	var role_label := Label.new()
 	role_label.position = Vector2(54.0, 24.0)
-	role_label.size = Vector2(66.0, 17.0)
+	role_label.size = Vector2(58.0, 17.0)
 	role_label.add_theme_font_size_override("font_size", 10)
 	var role_color: Color = ROLE_COLORS.get(survivor.kind, Color.WHITE)
 	role_label.add_theme_color_override("font_color", role_color)
 	role_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(role_label)
 	var status_label := Label.new()
-	status_label.position = Vector2(116.0, 24.0)
-	status_label.size = Vector2(62.0, 17.0)
+	status_label.position = Vector2(112.0, 24.0)
+	status_label.size = Vector2(66.0, 17.0)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	status_label.add_theme_font_size_override("font_size", 10)
 	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(status_label)
-	var health_bar := ProgressBar.new()
-	health_bar.position = Vector2(54.0, 46.0)
-	health_bar.size = Vector2(124.0, 8.0)
-	health_bar.show_percentage = false
-	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	health_bar.add_theme_stylebox_override("background", _progress_style(Color(0.08, 0.13, 0.15)))
-	health_bar.add_theme_stylebox_override("fill", _progress_style(Color(0.15, 0.88, 0.48)))
-	button.add_child(health_bar)
+	var health_track := Panel.new()
+	health_track.position = Vector2(54.0, 47.0)
+	health_track.size = Vector2(124.0, 7.0)
+	health_track.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	health_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_track.add_theme_stylebox_override("panel", _progress_style(Color(0.08, 0.13, 0.15)))
+	button.add_child(health_track)
+	var health_fill := Panel.new()
+	health_fill.size = health_track.size
+	health_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_fill.add_theme_stylebox_override("panel", _progress_style(Color(0.15, 0.88, 0.48)))
+	health_track.add_child(health_fill)
 	_card_list.add_child(button)
 	_cards[survivor] = {
-		"button": button, "health": health_bar, "badge": badge,
+		"button": button, "health_fill": health_fill, "badge": badge,
 		"name": name_label, "level": level_label, "role": role_label,
 		"status_label": status_label, "status": "",
 	}
@@ -139,22 +143,22 @@ func _create_card(survivor: Survivor) -> void:
 func _update_card(survivor: Survivor) -> void:
 	var entry: Dictionary = _cards[survivor]
 	var button := entry["button"] as Button
-	var health_bar := entry["health"] as ProgressBar
+	var health_fill := entry["health_fill"] as Panel
 	var badge := entry["badge"] as Label
 	var name_label := entry["name"] as Label
 	var level_label := entry["level"] as Label
 	var role_label := entry["role"] as Label
 	var status_label := entry["status_label"] as Label
-	var current := survivor.health.current_health if survivor.health != null else 0
-	var maximum := survivor.health.max_health if survivor.health != null else survivor.max_health
+	var current: float = float(survivor.health.current_health if survivor.health != null else 0)
+	var maximum: float = float(survivor.health.max_health if survivor.health != null else survivor.max_health)
 	badge.text = _role_icon(survivor.kind)
 	name_label.text = survivor.survivor_name.to_upper()
 	level_label.text = "LV %d" % survivor.level
 	role_label.text = Survivor.name_for_kind(survivor.kind).to_upper()
 	status_label.text = "● %s" % survivor.status_name()
 	status_label.add_theme_color_override("font_color", _status_color(survivor))
-	health_bar.max_value = maximum
-	health_bar.value = current
+	var health_ratio: float = clampf(current / maxf(maximum, 1.0), 0.0, 1.0)
+	health_fill.size = Vector2(124.0 * health_ratio, 7.0)
 	if entry["status"] != survivor.status_name():
 		entry["status"] = survivor.status_name()
 		button.add_theme_stylebox_override("normal", _card_style(survivor))
