@@ -35,6 +35,7 @@ func _perform_interaction(player: PlayerController) -> void:
 	if player.try_spend_currency(upgrade_cost):
 		consume()
 		var description := Upgrades.apply(player, _chosen_type)
+		player.record_upgrade(_chosen_type)
 		print("[ShopNode] Purchased! %s" % description)
 	else:
 		print("[ShopNode] Not enough gold (have %d, need %d) -- walk away and come back once you've got more" % [player.currency, upgrade_cost])
