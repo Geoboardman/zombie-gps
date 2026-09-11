@@ -1,21 +1,28 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/survivor_node.gd" id="1_svnode"]
 [ext_resource type="PackedScene" path="res://scenes/survivor.tscn" id="2_srvrscn"]
+[ext_resource type="Script" path="res://scripts/character_visual.gd" id="3_visual"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Sam_SingleWeapon.gltf" id="4_survivor"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/survival/Tent.fbx" id="5_tent"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/survival/Radio.fbx" id="6_radio"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/survival/Bonfire_Fire.fbx" id="7_fire"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_svnode"]
 radius = 10.0
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_svnode"]
-top_radius = 1.0
-bottom_radius = 1.0
-height = 2.0
+top_radius = 1.65
+bottom_radius = 1.65
+height = 0.035
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_svnode"]
-albedo_color = Color(0.85, 0.55, 0.25, 1)
+transparency = 1
+albedo_color = Color(0.95, 0.55, 0.15, 0.3)
 emission_enabled = true
-emission = Color(0.5, 0.3, 0.1, 1)
-emission_energy_multiplier = 0.6
+emission = Color(0.8, 0.3, 0.05, 1)
+emission_energy_multiplier = 1.3
+shading_mode = 0
 
 [node name="SurvivorNode" type="Area3D"]
 script = ExtResource("1_svnode")
@@ -24,13 +31,35 @@ survivor_scene = ExtResource("2_srvrscn")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_svnode")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.035, 0)
 mesh = SubResource("CylinderMesh_svnode")
 surface_material_override/0 = SubResource("StandardMaterial3D_svnode")
 
+[node name="Tent" parent="." instance=ExtResource("5_tent")]
+position = Vector3(1.25, 0.03, 0.85)
+rotation_degrees = Vector3(0, -32, 0)
+scale = Vector3(0.72, 0.72, 0.72)
+
+[node name="Bonfire" parent="." instance=ExtResource("7_fire")]
+position = Vector3(-1.1, 0.03, 0.75)
+scale = Vector3(0.75, 0.75, 0.75)
+
+[node name="Radio" parent="." instance=ExtResource("6_radio")]
+position = Vector3(-0.72, 0.08, -0.15)
+rotation_degrees = Vector3(0, 18, 0)
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="VisualRoot" type="Node3D" parent="."]
+position = Vector3(0.35, 0, -0.35)
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.08, 1.08, 1.08)
+script = ExtResource("3_visual")
+
+[node name="Model" parent="VisualRoot" instance=ExtResource("4_survivor")]
+
 [node name="RecruitLabel" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+position = Vector3(0, 3.1, 0)
 billboard = 1
 no_depth_test = true
 font_size = 48
