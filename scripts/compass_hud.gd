@@ -3,8 +3,8 @@ extends Control
 
 # An egocentric compass strip: "ahead" (wherever the player is currently
 # facing) sits at the center, directly behind wraps to both edges. Every
-# MapNode in the world (shop or boss altar) shows up as a colored dot
-# with a distance label, regardless of how far away or out of view it
+# MapNode in the world (shop or boss altar) shows up as a colored diamond,
+# regardless of how far away or out of view it
 # is -- this is the actual answer to "which way should I walk," since in
 # a real-world game a node 300m away is never going to be visible in the
 # 3D view no matter how good your draw distance is.
@@ -47,33 +47,28 @@ func _draw() -> void:
 
 		var to_target := poi.global_position - _player.global_position
 		to_target.y = 0.0
-		var dist := to_target.length()
 		var bearing_deg := rad_to_deg(_angle_of(to_target))
 		var relative_deg := wrapf(bearing_deg - heading_deg, -180.0, 180.0)
 
 		var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
 
 		var color := Color(0.95, 0.8, 0.1) # shop yellow, matches shop_node.tscn
-		var label := "Shop"
 		if poi is BossAltarNode:
 			color = Color(0.7, 0.2, 0.9) # boss purple, matches boss_altar_node.tscn
-			label = "Boss"
 		elif poi is SurvivorNode:
 			color = Color(0.85, 0.55, 0.25) # amber, matches survivor_node.tscn
-			label = "Survivor"
 		elif poi is SupplyCacheNode:
 			color = Color(0.15, 0.75, 0.85)
-			label = "Supply"
 		elif poi is FieldKitNode:
 			color = Color(0.95, 0.55, 0.1)
-			label = "Field Kit"
 
-		draw_circle(Vector2(x, strip_height / 2.0), 6.0, color)
-		draw_string(
-			ThemeDB.fallback_font, Vector2(x - 30.0, strip_height + 16.0),
-			"%s %dm" % [label, int(dist)],
-			HORIZONTAL_ALIGNMENT_CENTER, 60.0, 14, color
-		)
+		var marker := PackedVector2Array([
+			Vector2(x, 6.0),
+			Vector2(x + 6.0, strip_height / 2.0),
+			Vector2(x, strip_height - 6.0),
+			Vector2(x - 6.0, strip_height / 2.0),
+		])
+		draw_colored_polygon(marker, color)
 
 
 func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> void:
@@ -88,8 +83,8 @@ func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> vo
 
 func _compass_background() -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0.025, 0.035, 0.045, 0.88)
-	box.border_color = Color(0.3, 0.36, 0.4, 0.9)
+	box.bg_color = Color(0.018, 0.055, 0.068, 0.82)
+	box.border_color = Color(0.3, 0.62, 0.68, 0.72)
 	box.set_border_width_all(1)
 	box.set_corner_radius_all(10)
 	return box
