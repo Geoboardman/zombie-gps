@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
 [ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
@@ -24,6 +24,8 @@
 [ext_resource type="PackedScene" path="res://scenes/supply_cache_node.tscn" id="22_cache"]
 [ext_resource type="Script" path="res://scripts/upgrade_choice_ui.gd" id="23_upgrade_ui"]
 [ext_resource type="Script" path="res://scripts/rest_control.gd" id="24_rest"]
+[ext_resource type="PackedScene" path="res://scenes/field_kit_node.tscn" id="25_fieldkit"]
+[ext_resource type="Script" path="res://scripts/interaction_controller.gd" id="26_interaction"]
 
 [sub_resource type="Resource" id="Resource_style1"]
 script = ExtResource("7_style")
@@ -129,8 +131,9 @@ objective_title_path = NodePath("../HUD/ObjectivePanel/ObjectiveTitle")
 objective_detail_path = NodePath("../HUD/ObjectivePanel/ObjectiveDetail")
 toast_label_path = NodePath("../HUD/ToastLabel")
 upgrade_choice_path = NodePath("../HUD/UpgradeChoice")
-boss_action_button_path = NodePath("../HUD/BossActionButton")
+victory_screen_path = NodePath("../HUD/BossVictoryScreen")
 starter_zombie_scene = ExtResource("9_zscn")
+field_kit_scene = ExtResource("25_fieldkit")
 supply_cache_scene = ExtResource("22_cache")
 survivor_node_scene = ExtResource("19_svnode")
 boss_altar_scene = ExtResource("12_bossscn")
@@ -206,14 +209,35 @@ horizontal_alignment = 1
 vertical_alignment = 1
 modulate = Color(1, 1, 1, 0)
 
-[node name="BossActionButton" type="Button" parent="HUD"]
-anchor_left = 0.18
-anchor_top = 0.72
-anchor_right = 0.82
+[node name="InteractionController" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("26_interaction")
+player_path = NodePath("../../Player")
+action_button_path = NodePath("ActionButton")
+detail_label_path = NodePath("DetailLabel")
+
+[node name="DetailLabel" type="Label" parent="HUD/InteractionController"]
+anchor_left = 0.1
+anchor_top = 0.655
+anchor_right = 0.9
+anchor_bottom = 0.705
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.93, 0.95, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="ActionButton" type="Button" parent="HUD/InteractionController"]
+anchor_left = 0.14
+anchor_top = 0.71
+anchor_right = 0.86
 anchor_bottom = 0.79
-visible = false
-theme_override_font_sizes/font_size = 24
-text = "SUMMON BOSS"
+mouse_filter = 0
+theme_override_font_sizes/font_size = 23
+text = "INTERACT"
 
 [node name="AbilityBar" type="Control" parent="HUD"]
 anchor_left = 0.5
@@ -321,15 +345,21 @@ theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 text = "+0 Gold"
 
+[node name="StatsLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
+visible = false
+theme_override_font_sizes/font_size = 19
+horizontal_alignment = 1
+text = "RUN SUMMARY"
+
 [node name="ContinueButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 theme_override_font_sizes/font_size = 22
-text = "Continue Deeper"
+text = "PUSH DEEPER"
 
 [node name="LeaveButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 theme_override_font_sizes/font_size = 22
-text = "Leave (Bank Run)"
+text = "EXTRACT RUN"
 
 [node name="UpgradeChoice" type="Control" parent="HUD"]
 anchor_right = 1.0
