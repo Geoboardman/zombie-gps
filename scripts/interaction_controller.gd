@@ -9,17 +9,20 @@ extends Control
 @export var action_button_path: NodePath
 @export var detail_label_path: NodePath
 
-const BUTTON_SIZE := Vector2(260.0, 58.0)
-const DETAIL_SIZE := Vector2(280.0, 38.0)
+const BUTTON_SIZE := Vector2(205.0, 48.0)
+const DETAIL_SIZE := Vector2(225.0, 30.0)
 const WORLD_OFFSET := Vector3(0.0, 0.65, 0.0)
-const SCREEN_GAP := 12.0
+const DETAIL_GAP := 5.0
+const SCREEN_GAP := 10.0
 
+var _player: PlayerController
 var _button_template: Button
 var _detail_template: Label
 var _entries: Dictionary = {}
 
 
 func _ready() -> void:
+	_player = get_node(player_path) as PlayerController
 	_button_template = get_node(action_button_path) as Button
 	_detail_template = get_node(detail_label_path) as Label
 	_button_template.visible = false
@@ -58,6 +61,7 @@ func _ensure_entry(candidate: InteractableMapNode) -> void:
 	add_child(detail)
 	add_child(button)
 	_entries[candidate] = {"button": button, "detail": detail}
+	_set_world_labels_visible(candidate, false)
 
 
 func _remove_stale_entries(available: Array[InteractableMapNode]) -> void:
@@ -65,6 +69,8 @@ func _remove_stale_entries(available: Array[InteractableMapNode]) -> void:
 		if is_instance_valid(candidate) and available.has(candidate as InteractableMapNode):
 			continue
 		var entry: Dictionary = _entries[candidate]
+		if is_instance_valid(candidate):
+			_set_world_labels_visible(candidate as InteractableMapNode, true)
 		(entry["button"] as Button).queue_free()
 		(entry["detail"] as Label).queue_free()
 		_entries.erase(candidate)
@@ -75,6 +81,7 @@ func _layout_entries(available: Array[InteractableMapNode]) -> void:
 	if camera == null:
 		return
 	var viewport_size := get_viewport_rect().size
+	var player_screen := camera.unproject_position(_player.global_position + Vector3(0.0, 1.0, 0.0))
 	var occupied: Array[Rect2] = []
 	for candidate: InteractableMapNode in available:
 		var entry: Dictionary = _entries[candidate]
@@ -85,21 +92,29 @@ func _layout_entries(available: Array[InteractableMapNode]) -> void:
 			detail.visible = false
 			continue
 		var projected := camera.unproject_position(candidate.global_position + WORLD_OFFSET)
+		var away_from_player := projected - player_screen
+		if away_from_player.length_squared() < 1.0:
+			away_from_player = Vector2.UP
+		var prompt_center := projected + away_from_player.normalized() * 58.0
 		var button_position := Vector2(
-			clampf(projected.x - BUTTON_SIZE.x * 0.5, 12.0, viewport_size.x - BUTTON_SIZE.x - 12.0),
-			clampf(projected.y + 28.0, 180.0, viewport_size.y - BUTTON_SIZE.y - 150.0)
+			clampf(prompt_center.x - BUTTON_SIZE.x * 0.5, 12.0, viewport_size.x - BUTTON_SIZE.x - 12.0),
+			clampf(prompt_center.y, 218.0, viewport_size.y - BUTTON_SIZE.y - 140.0)
 		)
-		var button_rect := Rect2(button_position, BUTTON_SIZE)
-		while _intersects_any(button_rect, occupied):
-			button_rect.position.y += BUTTON_SIZE.y + SCREEN_GAP
-			if button_rect.end.y > viewport_size.y - 140.0:
-				button_rect.position.y = maxf(180.0, button_rect.position.y - (BUTTON_SIZE.y + SCREEN_GAP) * 2.0)
+		var cluster_rect := Rect2(
+			Vector2(button_position.x - (DETAIL_SIZE.x - BUTTON_SIZE.x) * 0.5, button_position.y - DETAIL_SIZE.y - DETAIL_GAP),
+			Vector2(DETAIL_SIZE.x, DETAIL_SIZE.y + DETAIL_GAP + BUTTON_SIZE.y)
+		)
+		while _intersects_any(cluster_rect, occupied):
+			cluster_rect.position.y += cluster_rect.size.y + SCREEN_GAP
+			if cluster_rect.end.y > viewport_size.y - 132.0:
+				cluster_rect.position.y = maxf(180.0, cluster_rect.position.y - (cluster_rect.size.y + SCREEN_GAP) * 2.0)
+				cluster_rect.position.x = clampf(cluster_rect.position.x + DETAIL_SIZE.x * 0.55, 8.0, viewport_size.x - DETAIL_SIZE.x - 8.0)
 				break
-		occupied.append(button_rect)
+		occupied.append(cluster_rect)
 		button.text = "TAP  •  %s" % candidate.get_action_label()
 		detail.text = candidate.get_detail_text()
-		button.position = button_rect.position
-		detail.position = Vector2(button_rect.get_center().x - DETAIL_SIZE.x * 0.5, button_rect.position.y - DETAIL_SIZE.y - 6.0)
+		button.position = Vector2(cluster_rect.get_center().x - BUTTON_SIZE.x * 0.5, cluster_rect.end.y - BUTTON_SIZE.y)
+		detail.position = cluster_rect.position
 		button.visible = true
 		detail.visible = not detail.text.is_empty()
 
@@ -114,3 +129,8 @@ func _intersects_any(rect: Rect2, occupied: Array[Rect2]) -> bool:
 func _on_candidate_pressed(candidate: InteractableMapNode) -> void:
 	if candidate != null and is_instance_valid(candidate):
 		candidate.interact()
+
+
+func _set_world_labels_visible(candidate: InteractableMapNode, value: bool) -> void:
+	for node: Node in candidate.find_children("*", "Label3D", true, false):
+		(node as Label3D).visible = value
