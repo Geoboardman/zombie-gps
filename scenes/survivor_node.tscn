@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/survivor_node.gd" id="1_svnode"]
 [ext_resource type="PackedScene" path="res://scenes/survivor.tscn" id="2_srvrscn"]
@@ -7,6 +7,9 @@
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Tent.fbx" id="5_tent"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Radio.fbx" id="6_radio"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/survival/Bonfire_Fire.fbx" id="7_fire"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Lis_SingleWeapon.gltf" id="8_lis"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Matt_SingleWeapon.gltf" id="9_matt"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters/Characters_Shaun_SingleWeapon.gltf" id="10_shaun"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_svnode"]
 radius = 10.0
@@ -50,13 +53,40 @@ position = Vector3(-0.62, 0.14, -0.08)
 rotation_degrees = Vector3(0, 18, 0)
 scale = Vector3(0.55, 0.55, 0.55)
 
-[node name="VisualRoot" type="Node3D" parent="."]
+[node name="Visual0" type="Node3D" parent="."]
 position = Vector3(0.35, 0, -0.35)
 rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(1.08, 1.08, 1.08)
 script = ExtResource("3_visual")
 
-[node name="Model" parent="VisualRoot" instance=ExtResource("4_survivor")]
+[node name="Model" parent="Visual0" instance=ExtResource("8_lis")]
+
+[node name="Visual1" type="Node3D" parent="."]
+visible = false
+position = Vector3(0.35, 0, -0.35)
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.08, 1.08, 1.08)
+script = ExtResource("3_visual")
+
+[node name="Model" parent="Visual1" instance=ExtResource("9_matt")]
+
+[node name="Visual2" type="Node3D" parent="."]
+visible = false
+position = Vector3(0.35, 0, -0.35)
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.08, 1.08, 1.08)
+script = ExtResource("3_visual")
+
+[node name="Model" parent="Visual2" instance=ExtResource("4_survivor")]
+
+[node name="Visual3" type="Node3D" parent="."]
+visible = false
+position = Vector3(0.35, 0, -0.35)
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.08, 1.08, 1.08)
+script = ExtResource("3_visual")
+
+[node name="Model" parent="Visual3" instance=ExtResource("10_shaun")]
 
 [node name="RecruitLabel" type="Label3D" parent="."]
 position = Vector3(0, 3.1, 0)
