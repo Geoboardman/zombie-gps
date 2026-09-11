@@ -8,11 +8,10 @@ extends InteractableMapNode
 # consumes the altar (one-time use).
 
 signal boss_fight_requested
-signal boss_defeated
+signal boss_defeated(reward_awarded: int)
 
 @export var boss_scene: PackedScene
 @export var interact_action := "ui_accept" # default Enter/Space -- swap for a dedicated "interact" action later if you want
-@export var victory_screen_path: NodePath # set relative to the main scene, not this node -- see main.tscn wiring
 @export var district := 1
 
 var _player_in_range := false
@@ -64,10 +63,7 @@ func _perform_interaction(_interacting_player: PlayerController) -> void:
 
 	boss.attacked_player.connect(_player.take_damage)
 	boss.died.connect(func():
-		_player.add_currency(boss.currency_reward)
-		boss_defeated.emit()
-		if victory_screen_path != NodePath(""):
-			var screen := get_tree().current_scene.get_node(victory_screen_path) as BossVictoryScreen
-			screen.show_victory(boss.currency_reward)
+		var awarded := _player.add_currency(boss.currency_reward)
+		boss_defeated.emit(awarded)
 		queue_free()
 	)
