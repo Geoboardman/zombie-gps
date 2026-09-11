@@ -31,14 +31,17 @@ func _draw() -> void:
 
 	var actual_width := size.x if size.x > 0.0 else strip_width
 	draw_style_box(_compass_background(), Rect2(0, 0, actual_width, strip_height))
-	draw_line(Vector2(actual_width / 2.0, 3.0), Vector2(actual_width / 2.0, strip_height - 3.0), Color(0.95, 0.78, 0.25), 3.0)
 
 	var heading_deg := rad_to_deg(_angle_of(-_player.global_transform.basis.z))
+	_draw_notches(heading_deg)
 
 	_draw_cardinal("N", 0.0, heading_deg)
 	_draw_cardinal("E", 90.0, heading_deg)
 	_draw_cardinal("S", 180.0, heading_deg)
 	_draw_cardinal("W", -90.0, heading_deg)
+	var center_x := actual_width / 2.0
+	draw_line(Vector2(center_x, 3.0), Vector2(center_x, 8.0), Color(0.95, 0.78, 0.25), 3.0)
+	draw_line(Vector2(center_x, strip_height - 7.0), Vector2(center_x, strip_height - 3.0), Color(0.95, 0.78, 0.25), 3.0)
 
 	for node in get_tree().get_nodes_in_group("map_pois"):
 		var poi := node as Node3D
@@ -50,7 +53,11 @@ func _draw() -> void:
 		var bearing_deg := rad_to_deg(_angle_of(to_target))
 		var relative_deg := wrapf(bearing_deg - heading_deg, -180.0, 180.0)
 
-		var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
+		var x: float = clampf(
+			(actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0),
+			9.0,
+			actual_width - 9.0
+		)
 
 		var color := Color(0.95, 0.8, 0.1) # shop yellow, matches shop_node.tscn
 		if poi is BossAltarNode:
@@ -71,6 +78,19 @@ func _draw() -> void:
 		draw_colored_polygon(marker, color)
 
 
+func _draw_notches(heading_deg: float) -> void:
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	for absolute_deg in range(0, 360, 15):
+		var relative_deg := wrapf(float(absolute_deg) - heading_deg, -180.0, 180.0)
+		if absf(relative_deg) > 90.0:
+			continue
+		var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
+		var is_major := absolute_deg % 45 == 0
+		var notch_top := 23.0 if is_major else 26.0
+		var notch_color := Color(0.72, 0.82, 0.84, 0.72 if is_major else 0.42)
+		draw_line(Vector2(x, notch_top), Vector2(x, strip_height - 5.0), notch_color, 1.5)
+
+
 func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> void:
 	var relative_deg := wrapf(absolute_deg - heading_deg, -180.0, 180.0)
 	if absf(relative_deg) > 90.0:
@@ -78,7 +98,7 @@ func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> vo
 
 	var actual_width := size.x if size.x > 0.0 else strip_width
 	var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
-	draw_string(ThemeDB.fallback_font, Vector2(x - 6.0, 14.0), text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 16, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(x - 10.0, 21.0), text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 15, Color.WHITE)
 
 
 func _compass_background() -> StyleBoxFlat:
