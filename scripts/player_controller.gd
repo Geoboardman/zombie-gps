@@ -11,6 +11,7 @@ extends CharacterBody3D
 
 @export var gps_manager_path: NodePath
 @export var hud_label_path: NodePath # optional: a Label to show "HP: x/y"
+@export var health_bar_path: NodePath # optional: a ProgressBar for mobile-readable health
 @export var currency_label_path: NodePath # optional: a Label to show currency
 
 @export_group("Health & Attack")
@@ -60,6 +61,7 @@ var _invulnerable_timer := 0.0
 var _regen_accumulator := 0.0 # fractional HP banked here until it crosses a whole point
 var _ability_cooldowns: Dictionary = {} # Abilities.Type -> float remaining
 var _hud_label: Label
+var _health_bar: ProgressBar
 var _currency_label: Label
 var _mesh_material: StandardMaterial3D
 
@@ -97,7 +99,9 @@ func _ready() -> void:
 
 	if hud_label_path != NodePath(""):
 		_hud_label = get_node(hud_label_path)
-		_update_hud()
+	if health_bar_path != NodePath(""):
+		_health_bar = get_node(health_bar_path)
+	_update_hud()
 
 	if currency_label_path != NodePath(""):
 		_currency_label = get_node(currency_label_path)
@@ -326,12 +330,15 @@ func _on_health_changed(_current: int, _max_hp: int) -> void:
 
 func _update_hud() -> void:
 	if _hud_label:
-		_hud_label.text = "HP: %d/%d" % [health.current_health, health.max_health]
+		_hud_label.text = "%d / %d" % [health.current_health, health.max_health]
+	if _health_bar:
+		_health_bar.max_value = health.max_health
+		_health_bar.value = health.current_health
 
 
 func _update_currency_label() -> void:
 	if _currency_label:
-		_currency_label.text = "Gold: %d" % currency
+		_currency_label.text = "◆  %d" % currency
 
 
 func _on_died() -> void:
