@@ -147,3 +147,14 @@ Every searched supply cache now pauses for a three-upgrade choice. Build-shaping
 options include Double Tap, Piercing Rounds, Executioner, Burning Presence,
 Adrenal Response, and Cluster Grenade alongside the original stat upgrades.
 Acquired upgrades appear in the compact BUILD summary on the HUD.
+
+## Character asset integration
+
+The player, recruited survivors, and three standard zombie variants use models
+from the Quaternius Zombie Apocalypse Kit. Imported art lives under
+`assets/quaternius/`; gameplay roots, collision capsules, and health bars remain
+project-owned nodes. `CharacterVisual` resolves animation names inside imported
+glTF scenes and maps zombie state to Walk, Run, Idle_Attack, Punch, HitReact, and
+Death clips. Player and survivor gunfire uses the supplied gun-idle/walk clips
+plus procedural recoil, muzzle flash, and tracer feedback because the pack does
+not contain a dedicated firing animation.
