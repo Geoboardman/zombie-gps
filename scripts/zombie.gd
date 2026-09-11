@@ -124,8 +124,26 @@ func _process_attack(delta: float, distance_to_target: float) -> void:
 	if _attack_timer <= 0.0:
 		if _visual != null:
 			_visual.play_once("Punch", "Idle_Attack", 0.45)
-		attacked_player.emit(attack_damage)
+		var survivor_target := _nearest_survivor_in_range(maxf(3.2, attack_range * 1.3))
+		if survivor_target != null:
+			survivor_target.take_damage(attack_damage)
+		else:
+			attacked_player.emit(attack_damage)
 		_attack_timer = attack_cooldown
+
+
+func _nearest_survivor_in_range(maximum_distance: float) -> Survivor:
+	var nearest: Survivor = null
+	var nearest_distance := maximum_distance
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var candidate := node as Survivor
+		if candidate == null or not candidate.can_be_attacked():
+			continue
+		var distance := global_position.distance_to(candidate.global_position)
+		if distance <= nearest_distance:
+			nearest = candidate
+			nearest_distance = distance
+	return nearest
 
 
 func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
