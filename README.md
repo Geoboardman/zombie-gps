@@ -114,8 +114,21 @@ character pipeline is working on a phone.
 - Guided objectives are placed on a consistent local bearing, not yet snapped
   to safe pedestrian paths.
 - Real GPS and sensor heading are not implemented.
-- Extracted statistics and gold are summarized but not persisted between runs.
+- Extracting banks carried gold, best district, and successful extraction count
+  in `user://run_profile.json`; dying loses only the current run's carried gold.
 - The public Overpass API is suitable for development, not production traffic.
 - Generated map geometry is rebuilt as one area rather than streamed in chunks.
 - Bosses intentionally resist Knockback Pulse, although ordinary damage, aura,
   and fighter-survivor attacks work through the shared `Enemy` base class.
+
+## District risk and extraction
+
+Clearing a boss creates the run's main decision. Extracting records the carried
+gold and career best safely. Pushing deeper heals 25% max health, increases all
+future gold rewards by 25%, and reveals the next district modifier, but carried
+gold is lost if the player dies before reaching another extraction checkpoint.
+
+District pressure rotates between Runner Surge (runner-heavy waves), Brute
+Territory (brute-heavy waves), and The Horde (larger waves). This is deliberately
+a small first modifier set for testing whether repeated districts feel different
+before adding bespoke hazards or map events.
