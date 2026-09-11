@@ -29,7 +29,9 @@ func _draw() -> void:
 	if _player == null:
 		return
 
-	draw_rect(Rect2(0, 0, strip_width, strip_height), Color(0, 0, 0, 0.45))
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	draw_style_box(_compass_background(), Rect2(0, 0, actual_width, strip_height))
+	draw_line(Vector2(actual_width / 2.0, 3.0), Vector2(actual_width / 2.0, strip_height - 3.0), Color(0.95, 0.78, 0.25), 3.0)
 
 	var heading_deg := rad_to_deg(_angle_of(-_player.global_transform.basis.z))
 
@@ -49,7 +51,7 @@ func _draw() -> void:
 		var bearing_deg := rad_to_deg(_angle_of(to_target))
 		var relative_deg := wrapf(bearing_deg - heading_deg, -180.0, 180.0)
 
-		var x := (strip_width / 2.0) + (relative_deg / 180.0) * (strip_width / 2.0)
+		var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
 
 		var color := Color(0.95, 0.8, 0.1) # shop yellow, matches shop_node.tscn
 		var label := "Shop"
@@ -79,8 +81,18 @@ func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> vo
 	if absf(relative_deg) > 90.0:
 		return # behind the player -- don't clutter the strip with it
 
-	var x := (strip_width / 2.0) + (relative_deg / 180.0) * (strip_width / 2.0)
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
 	draw_string(ThemeDB.fallback_font, Vector2(x - 6.0, 14.0), text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 16, Color.WHITE)
+
+
+func _compass_background() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.025, 0.035, 0.045, 0.88)
+	box.border_color = Color(0.3, 0.36, 0.4, 0.9)
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(10)
+	return box
 
 
 # Consistent 2D bearing angle for any world-space vector, ignoring Y --
