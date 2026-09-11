@@ -9,23 +9,25 @@ extends Control
 
 signal pressed
 
-enum IconType { KNOCKBACK, HEAL, LIGHTNING }
+enum IconType { STASIS, HEAL, GRENADE }
 
 @export var radius := 36.0
 @export var icon_color := Color(0.3, 0.55, 0.9)
 @export var cooldown_overlay_color := Color(0, 0, 0, 0.7)
 @export var glyph_color := Color(1, 1, 1, 0.95)
 @export var label_text := "Q" # shown as a small keybind badge ABOVE the circle, not inside it
-@export var icon_type: IconType = IconType.KNOCKBACK
+@export var ability_name := "STASIS"
+@export var icon_type: IconType = IconType.STASIS
 
 const BADGE_RADIUS := 11.0
 const TOP_MARGIN := 22.0 # room reserved above the circle for the keybind badge
+const NAME_HEIGHT := 18.0
 
 var _cooldown_fraction := 0.0 # 0 = ready, 1 = just used
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(radius * 2.0, radius * 2.0 + TOP_MARGIN)
+	custom_minimum_size = Vector2(radius * 2.0, radius * 2.0 + TOP_MARGIN + NAME_HEIGHT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
@@ -64,6 +66,10 @@ func _draw() -> void:
 		_draw_cooldown_wedge(center)
 
 	_draw_keybind_badge()
+	draw_string(
+		ThemeDB.fallback_font, Vector2(0.0, radius * 2.0 + TOP_MARGIN + 15.0),
+		ability_name, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 12, Color.WHITE
+	)
 
 
 func _draw_keybind_badge() -> void:
@@ -78,15 +84,15 @@ func _draw_keybind_badge() -> void:
 
 func _draw_glyph(center: Vector2) -> void:
 	match icon_type:
-		IconType.KNOCKBACK:
+		IconType.STASIS:
 			_draw_burst_glyph(center)
 		IconType.HEAL:
 			_draw_cross_glyph(center)
-		IconType.LIGHTNING:
-			_draw_bolt_glyph(center)
+		IconType.GRENADE:
+			_draw_grenade_glyph(center)
 
 
-# Knockback: radiating burst lines, reading as an outward shove.
+# Stasis: radiating spokes, reading as a field stopping nearby enemies.
 func _draw_burst_glyph(center: Vector2) -> void:
 	var inner := radius * 0.25
 	var outer := radius * 0.55
@@ -104,18 +110,11 @@ func _draw_cross_glyph(center: Vector2) -> void:
 	draw_line(center + Vector2(-length, 0.0), center + Vector2(length, 0.0), glyph_color, thickness)
 
 
-# Overcharge: a lightning bolt, reading as a burst of power.
-func _draw_bolt_glyph(center: Vector2) -> void:
-	var s := radius * 0.5
-	var points := PackedVector2Array([
-		center + Vector2(0.15 * s, -1.0 * s),
-		center + Vector2(-0.6 * s, 0.15 * s),
-		center + Vector2(-0.05 * s, 0.15 * s),
-		center + Vector2(-0.15 * s, 1.0 * s),
-		center + Vector2(0.6 * s, -0.15 * s),
-		center + Vector2(0.05 * s, -0.15 * s),
-	])
-	draw_polygon(points, PackedColorArray([glyph_color]))
+# Grenade: round body, fuse, and spark.
+func _draw_grenade_glyph(center: Vector2) -> void:
+	draw_circle(center + Vector2(0.0, 5.0), radius * 0.3, glyph_color)
+	draw_line(center + Vector2(5.0, -5.0), center + Vector2(12.0, -13.0), glyph_color, 4.0)
+	draw_circle(center + Vector2(15.0, -16.0), 3.0, glyph_color)
 
 
 # A pie-slice wipe, clockwise from 12 o'clock, representing how much
