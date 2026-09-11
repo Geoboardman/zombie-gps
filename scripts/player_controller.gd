@@ -309,9 +309,11 @@ func take_damage(amount: int) -> void:
 	_invulnerable_timer = invulnerability_duration
 
 
-func add_currency(amount: int) -> void:
-	currency += int(amount * currency_gain_multiplier)
+func add_currency(amount: int) -> int:
+	var awarded := int(amount * currency_gain_multiplier)
+	currency += awarded
 	_update_currency_label()
+	return awarded
 
 
 # Called by shop nodes to spend currency. Returns true if the player could
