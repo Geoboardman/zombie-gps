@@ -1,8 +1,8 @@
 class_name AbilityButtonUI
 extends Control
 
-# A circular ability icon with a radial cooldown wipe, a themed glyph
-# showing what the ability DOES, and a small keybind badge above the
+# A circular ability icon with an outer recharge ring, a themed glyph
+# showing what the ability DOES, and a small desktop keybind badge on the
 # circle showing what to press -- all drawn in code, no image assets.
 # Responds to both mouse clicks and touch taps identically, since
 # Control's _gui_input receives both event types natively.
@@ -15,7 +15,7 @@ enum IconType { STASIS, HEAL, GRENADE }
 @export var icon_color := Color(0.3, 0.55, 0.9)
 @export var cooldown_overlay_color := Color(0, 0, 0, 0.7)
 @export var glyph_color := Color(1, 1, 1, 0.95)
-@export var label_text := "Q" # shown as a small keybind badge ABOVE the circle, not inside it
+@export var label_text := "Q"
 @export var ability_name := "STASIS"
 @export var icon_type: IconType = IconType.STASIS
 
@@ -59,26 +59,35 @@ func _draw() -> void:
 	if _cooldown_fraction > 0.0:
 		base_color = icon_color.darkened(0.35) # dim the whole icon while on cooldown, on top of the wipe overlay
 
-	draw_circle(center, radius + 5.0, Color(0.018, 0.055, 0.068, 0.92))
-	draw_arc(center, radius + 5.0, 0.0, TAU, 48, Color(0.25, 0.62, 0.68, 0.65), 2.0)
+	draw_circle(center, radius + 7.0, Color(0.018, 0.055, 0.068, 0.92))
+	draw_arc(center, radius + 5.0, 0.0, TAU, 48, Color(0.15, 0.25, 0.27, 0.95), 5.0)
 	draw_circle(center, radius, base_color)
 	draw_arc(center, radius, 0.0, TAU, 48, Color(0.85, 1, 1, 0.82), 2.0)
+	var recharge_fraction := 1.0 - _cooldown_fraction
+	if recharge_fraction > 0.001:
+		draw_arc(
+			center,
+			radius + 5.0,
+			-PI / 2.0,
+			-PI / 2.0 + TAU * recharge_fraction,
+			48,
+			icon_color.lightened(0.28),
+			5.0,
+			true
+		)
 
 	_draw_glyph(center)
-
-	if _cooldown_fraction > 0.0:
-		_draw_cooldown_wedge(center)
 
 	if _show_keyboard_hint:
 		_draw_keybind_badge()
 	draw_string(
-		ThemeDB.fallback_font, Vector2(0.0, radius * 2.0 + TOP_MARGIN + 15.0),
-		ability_name, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 12, Color.WHITE
+		ThemeDB.fallback_font, Vector2(-6.0, radius * 2.0 + TOP_MARGIN + 18.0),
+		ability_name, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0 + 12.0, 14, Color.WHITE
 	)
 
 
 func _draw_keybind_badge() -> void:
-	var badge_center := Vector2(radius, BADGE_RADIUS)
+	var badge_center := Vector2(radius, radius * 2.0 + TOP_MARGIN - 3.0)
 	draw_circle(badge_center, BADGE_RADIUS, Color(0, 0, 0, 0.65))
 	draw_arc(badge_center, BADGE_RADIUS, 0.0, TAU, 24, Color(1, 1, 1, 0.5), 1.5)
 	draw_string(
