@@ -38,6 +38,7 @@ var total_distance_meters := 0.0
 var zombies_defeated := 0
 var survivors_recruited := 0
 var bosses_defeated := 0
+var run_seed := 0
 
 var _player: PlayerController
 var _gps: GPSManager
@@ -53,6 +54,8 @@ var _last_tracking_position := Vector3.ZERO
 var _opening_started := false
 var _toast_tween: Tween
 var _choice_after_cache := false
+var _rng := RandomNumberGenerator.new()
+var _recent_upgrade_choices: Array[int] = []
 
 
 func _ready() -> void:
@@ -64,7 +67,11 @@ func _ready() -> void:
 	_upgrade_choice = get_node(upgrade_choice_path)
 	_victory_screen = get_node(victory_screen_path)
 	_zombie_spawner = get_node(zombie_spawner_path)
+	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
+	_rng.seed = run_seed
+	_zombie_spawner.configure_run(run_seed)
 	_zombie_spawner.begin_district(district)
+	print("[RunDirector] Run seed: %d" % run_seed)
 	_last_heat_position = _player.global_position
 	_last_tracking_position = _player.global_position
 
@@ -177,13 +184,14 @@ func _on_upgrade_chosen(type: Upgrades.Type) -> void:
 
 func _spawn_supply(distance: float) -> void:
 	var cache := supply_cache_scene.instantiate() as SupplyCacheNode
+	cache.configure_variant(_rng.randi_range(0, 2))
 	get_tree().current_scene.add_child(cache)
 	cache.global_position = _point_ahead(distance)
 	cache.collected.connect(_on_supply_collected)
 	_active_target = cache
 
 
-func _on_supply_collected() -> void:
+func _on_supply_collected(gold_found: int, healing_found: int) -> void:
 	if stage != Stage.SUPPLY:
 		return
 	_add_heat(1.0)
@@ -191,8 +199,8 @@ func _on_supply_collected() -> void:
 	_choice_after_cache = true
 	_active_target = null
 	_set_objective("CACHE EQUIPMENT FOUND", "Choose one upgrade before moving on")
-	_toast("CACHE SEARCHED  •  +35 GOLD  •  EQUIPMENT FOUND")
-	_upgrade_choice.show_choices(_player, Upgrades.random_choices(3), "SUPPLY CACHE — CHOOSE ONE")
+	_toast("CACHE SEARCHED  •  +%d GOLD  •  +%d HP" % [gold_found, healing_found])
+	_upgrade_choice.show_choices(_player, _draft_upgrade_choices(3), "SUPPLY CACHE — CHOOSE ONE")
 
 
 func _begin_survivor_stage(chosen_type: Upgrades.Type) -> void:
@@ -214,13 +222,14 @@ func _on_survivor_recruited(survivor: Survivor) -> void:
 	_add_heat(2.0)
 	var altar := boss_altar_scene.instantiate() as BossAltarNode
 	altar.district = district
+	altar.boss_mutation = _rng.randi_range(0, Boss.Mutation.values().size() - 1)
 	get_tree().current_scene.add_child(altar)
 	altar.global_position = _point_ahead(boss_distance + float(district - 1) * 15.0)
 	altar.boss_fight_requested.connect(_on_boss_requested)
 	altar.boss_defeated.connect(_on_boss_defeated)
 	_active_target = altar
 	_set_objective("DISTRICT %d BOSS REVEALED" % district, _detail_for_stage())
-	_toast("%s RECRUITED  •  BOSS SIGNAL REVEALED" % Survivor.name_for_kind(survivor.kind).to_upper())
+	_toast("%s RECRUITED  •  %s BOSS REVEALED" % [Survivor.name_for_kind(survivor.kind).to_upper(), Boss.mutation_name(altar.boss_mutation)])
 
 
 func _on_boss_requested() -> void:
@@ -239,8 +248,8 @@ func _on_boss_defeated(reward_awarded: int) -> void:
 		reward_awarded,
 		_player.currency,
 		district,
-		ZombieSpawner.modifier_name_for_district(next_district),
-		ZombieSpawner.modifier_description_for_district(next_district),
+		ZombieSpawner.modifier_name_for_district(next_district, run_seed),
+		ZombieSpawner.modifier_description_for_district(next_district, run_seed),
 		25,
 	)
 
@@ -254,10 +263,48 @@ func _on_push_deeper_requested() -> void:
 	_add_heat(2.0 + district)
 	_spawn_supply(supply_distance + float(district - 1) * 15.0)
 	_set_objective(
-		"DISTRICT %d — %s" % [district, ZombieSpawner.modifier_name_for_district(district)],
-		"%s • All gold rewards +25%%" % ZombieSpawner.modifier_description_for_district(district)
+		"DISTRICT %d — %s" % [district, ZombieSpawner.modifier_name_for_district(district, run_seed)],
+		"%s • All gold rewards +25%%" % ZombieSpawner.modifier_description_for_district(district, run_seed)
 	)
-	_toast("%s  •  GOLD REWARDS INCREASED" % ZombieSpawner.modifier_name_for_district(district))
+	_toast("%s  •  GOLD REWARDS INCREASED" % ZombieSpawner.modifier_name_for_district(district, run_seed))
+
+
+func _draft_upgrade_choices(count: int) -> Array[int]:
+	var full_pool: Array[int] = []
+	full_pool.assign(Upgrades.Type.values())
+	var pool: Array[int] = []
+	for candidate: int in full_pool:
+		if not _recent_upgrade_choices.has(candidate):
+			pool.append(candidate)
+	if pool.size() < count:
+		pool = full_pool.duplicate()
+	_shuffle_with_run_rng(pool)
+
+	var choices: Array[int] = []
+	var used_categories: Array[String] = []
+	for candidate: int in pool:
+		var category := Upgrades.category(candidate as Upgrades.Type)
+		if used_categories.has(category):
+			continue
+		choices.append(candidate)
+		used_categories.append(category)
+		if choices.size() >= count:
+			break
+	for candidate: int in pool:
+		if choices.size() >= count:
+			break
+		if not choices.has(candidate):
+			choices.append(candidate)
+	_recent_upgrade_choices = choices.duplicate()
+	return choices
+
+
+func _shuffle_with_run_rng(values: Array[int]) -> void:
+	for index in range(values.size() - 1, 0, -1):
+		var swap_index := _rng.randi_range(0, index)
+		var held := values[index]
+		values[index] = values[swap_index]
+		values[swap_index] = held
 
 
 func _on_extract_requested() -> void:
