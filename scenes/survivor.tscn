@@ -60,6 +60,7 @@ script = ExtResource("2_visual")
 [node name="Model" parent="Visual3" instance=ExtResource("6_shaun")]
 
 [node name="RoleLabel" type="Label3D" parent="."]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
 billboard = 1
 no_depth_test = true
