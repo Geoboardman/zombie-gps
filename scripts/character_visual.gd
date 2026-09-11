@@ -8,6 +8,11 @@ var _animation_player: AnimationPlayer
 var _locked := false
 var _generation := 0
 
+const EMBEDDED_WEAPONS := [
+	"Axe", "Guitar", "Knife", "Pistol", "Rifle", "Shotgun", "SMG",
+	"Spear", "WoodenBat_Barbed", "WoodenBat_Saw",
+]
+
 
 func _ready() -> void:
 	_animation_player = _find_animation_player(self)
@@ -77,6 +82,19 @@ func recoil() -> void:
 func set_animation_speed(value: float) -> void:
 	if _animation_player != null:
 		_animation_player.speed_scale = maxf(0.0, value)
+
+
+func select_embedded_weapon(weapon_name: String) -> bool:
+	var found := false
+	for node: Node in find_children("*", "Node3D", true, false):
+		if not EMBEDDED_WEAPONS.has(String(node.name)):
+			continue
+		(node as Node3D).visible = String(node.name) == weapon_name
+		if String(node.name) == weapon_name:
+			found = true
+	if not found:
+		push_warning("[CharacterVisual] Embedded weapon %s was not found" % weapon_name)
+	return found
 
 
 func attach_weapon(weapon_scene: PackedScene) -> bool:
