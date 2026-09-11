@@ -20,12 +20,17 @@ func _ready() -> void:
 
 	var player := get_node(player_path) as PlayerController
 	player.health.died.connect(_on_player_died)
+	var lost_label := get_node("CenterContainer/VBoxContainer/LostLabel") as Label
+	lost_label.text = "%d carried gold will be lost" % player.currency
 
 	var restart_button := get_node("CenterContainer/VBoxContainer/RestartButton") as Button
 	restart_button.pressed.connect(_on_restart_pressed)
 
 
 func _on_player_died() -> void:
+	var player := get_node(player_path) as PlayerController
+	var lost_label := get_node("CenterContainer/VBoxContainer/LostLabel") as Label
+	lost_label.text = "%d CARRIED GOLD LOST\nOnly extracted gold is banked." % player.currency
 	visible = true
 	get_tree().paused = true
 
