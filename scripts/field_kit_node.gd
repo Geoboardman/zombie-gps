@@ -6,7 +6,7 @@ signal opened
 
 func _ready() -> void:
 	action_label = "OPEN FIELD KIT"
-	detail_text = "Recovered from the outbreak carrier"
+	detail_text = ""
 	super._ready()
 
 
