@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
 [ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
@@ -51,6 +51,44 @@ size = Vector2(1200, 1200)
 albedo_color = Color(0.16, 0.25, 0.18, 1)
 shading_mode = 0
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_status"]
+bg_color = Color(0.025, 0.035, 0.045, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.36, 0.4, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_health_bg"]
+bg_color = Color(0.12, 0.14, 0.16, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_health_fill"]
+bg_color = Color(0.25, 0.78, 0.42, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_objective"]
+bg_color = Color(0.025, 0.035, 0.045, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.3, 0.34, 0.9)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [node name="Main" type="Node3D"]
 
 [node name="GPSManager" type="Node" parent="."]
@@ -78,6 +116,7 @@ map_builder_path = NodePath("../MapBuilder")
 script = ExtResource("5_plyr")
 gps_manager_path = NodePath("../GPSManager")
 hud_label_path = NodePath("../HUD/PlayerHPLabel")
+health_bar_path = NodePath("../HUD/HealthBar")
 currency_label_path = NodePath("../HUD/CurrencyLabel")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
@@ -140,73 +179,117 @@ boss_altar_scene = ExtResource("12_bossscn")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="PlayerHPLabel" type="Label" parent="HUD"]
-offset_left = 20.0
+[node name="StatusPanel" type="Panel" parent="HUD"]
+offset_left = 16.0
+offset_top = 14.0
+offset_right = 524.0
+offset_bottom = 72.0
+theme_override_styles/panel = SubResource("StyleBox_status")
+
+[node name="HPTitle" type="Label" parent="HUD"]
+offset_left = 30.0
 offset_top = 20.0
-offset_right = 240.0
-offset_bottom = 60.0
-theme_override_font_sizes/font_size = 24
-text = "HP: 100/100"
+offset_right = 82.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.68, 0.75, 0.79, 1)
+theme_override_font_sizes/font_size = 15
+text = "HEALTH"
+
+[node name="HealthBar" type="ProgressBar" parent="HUD"]
+offset_left = 92.0
+offset_top = 23.0
+offset_right = 346.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBox_health_bg")
+theme_override_styles/fill = SubResource("StyleBox_health_fill")
+value = 100.0
+show_percentage = false
+
+[node name="PlayerHPLabel" type="Label" parent="HUD"]
+offset_left = 92.0
+offset_top = 23.0
+offset_right = 346.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "100 / 100"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="CurrencyLabel" type="Label" parent="HUD"]
-offset_left = 20.0
-offset_top = 55.0
-offset_right = 240.0
-offset_bottom = 95.0
-theme_override_font_sizes/font_size = 24
-text = "Gold: 0"
+offset_left = 366.0
+offset_top = 21.0
+offset_right = 510.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "◆  0"
+horizontal_alignment = 1
 
 [node name="CompassHUD" type="Control" parent="HUD"]
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -250.0
-offset_top = 180.0
-offset_right = 250.0
-offset_bottom = 250.0
+offset_left = -254.0
+offset_top = 82.0
+offset_right = 254.0
+offset_bottom = 138.0
 script = ExtResource("15_cmps")
 player_path = NodePath("../../Player")
-strip_width = 500.0
+strip_width = 508.0
 strip_height = 36.0
 
-[node name="ObjectivePanel" type="ColorRect" parent="HUD"]
-anchor_left = 0.05
-anchor_top = 0.105
-anchor_right = 0.95
-anchor_bottom = 0.185
-color = Color(0.03, 0.04, 0.05, 0.82)
+[node name="ObjectivePanel" type="Panel" parent="HUD"]
+offset_left = 16.0
+offset_top = 148.0
+offset_right = 524.0
+offset_bottom = 244.0
+theme_override_styles/panel = SubResource("StyleBox_objective")
 
 [node name="ObjectiveTitle" type="Label" parent="HUD/ObjectivePanel"]
 anchor_left = 0.04
 anchor_top = 0.08
 anchor_right = 0.96
 anchor_bottom = 0.48
+offset_left = 8.0
+offset_right = -8.0
 theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "SCANNING THE OUTBREAK"
 horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="ObjectiveDetail" type="Label" parent="HUD/ObjectivePanel"]
 anchor_left = 0.04
 anchor_top = 0.5
 anchor_right = 0.96
 anchor_bottom = 0.94
+offset_left = 8.0
+offset_right = -8.0
 theme_override_colors/font_color = Color(0.88, 0.9, 0.92, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "Loading the streets around you…"
 horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="ToastLabel" type="Label" parent="HUD"]
-anchor_left = 0.1
-anchor_top = 0.22
-anchor_right = 0.9
-anchor_bottom = 0.28
+offset_left = 24.0
+offset_top = 254.0
+offset_right = 516.0
+offset_bottom = 334.0
 theme_override_colors/font_color = Color(0.25, 0.95, 0.9, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 22
 text = "OUTBREAK DETECTED"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
+clip_text = true
 modulate = Color(1, 1, 1, 0)
 
 [node name="InteractionController" type="Control" parent="HUD"]
