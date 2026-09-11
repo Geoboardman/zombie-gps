@@ -3,7 +3,7 @@ extends Control
 
 @export var player_path: NodePath
 
-const CARD_SIZE := Vector2(164.0, 54.0)
+const CARD_SIZE := Vector2(184.0, 64.0)
 const ROLE_COLORS := {
 	Survivor.SurvivorKind.FIGHTER: Color(0.95, 0.55, 0.18),
 	Survivor.SurvivorKind.MEDIC: Color(0.2, 0.9, 0.5),
@@ -58,7 +58,7 @@ func _build_party_list() -> void:
 	_card_list = VBoxContainer.new()
 	_card_list.name = "PartyCards"
 	_card_list.position = Vector2(8.0, 164.0)
-	_card_list.size = Vector2(CARD_SIZE.x, 174.0)
+	_card_list.size = Vector2(CARD_SIZE.x, 204.0)
 	_card_list.add_theme_constant_override("separation", 4)
 	add_child(_card_list)
 
@@ -79,26 +79,61 @@ func _sync_cards(survivors: Array[Survivor]) -> void:
 func _create_card(survivor: Survivor) -> void:
 	var button := Button.new()
 	button.custom_minimum_size = CARD_SIZE
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_font_size_override("font_size", 12)
+	button.text = ""
 	button.pressed.connect(_open_detail.bind(survivor))
 	var badge := Label.new()
-	badge.position = Vector2(7.0, 7.0)
-	badge.size = Vector2(30.0, 30.0)
+	badge.position = Vector2(8.0, 9.0)
+	badge.size = Vector2(38.0, 38.0)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 16)
+	badge.add_theme_font_size_override("font_size", 21)
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.add_theme_stylebox_override("normal", _badge_style(survivor))
 	button.add_child(badge)
+	var name_label := Label.new()
+	name_label.position = Vector2(54.0, 5.0)
+	name_label.size = Vector2(82.0, 21.0)
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_color_override("font_color", Color(0.94, 0.98, 1.0))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(name_label)
+	var level_label := Label.new()
+	level_label.position = Vector2(136.0, 6.0)
+	level_label.size = Vector2(42.0, 19.0)
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	level_label.add_theme_font_size_override("font_size", 11)
+	level_label.add_theme_color_override("font_color", Color(0.7, 0.82, 0.86))
+	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(level_label)
+	var role_label := Label.new()
+	role_label.position = Vector2(54.0, 24.0)
+	role_label.size = Vector2(66.0, 17.0)
+	role_label.add_theme_font_size_override("font_size", 10)
+	var role_color: Color = ROLE_COLORS.get(survivor.kind, Color.WHITE)
+	role_label.add_theme_color_override("font_color", role_color)
+	role_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(role_label)
+	var status_label := Label.new()
+	status_label.position = Vector2(116.0, 24.0)
+	status_label.size = Vector2(62.0, 17.0)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	status_label.add_theme_font_size_override("font_size", 10)
+	status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(status_label)
 	var health_bar := ProgressBar.new()
-	health_bar.position = Vector2(44.0, 39.0)
-	health_bar.size = Vector2(110.0, 8.0)
+	health_bar.position = Vector2(54.0, 46.0)
+	health_bar.size = Vector2(124.0, 8.0)
 	health_bar.show_percentage = false
 	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_bar.add_theme_stylebox_override("background", _progress_style(Color(0.08, 0.13, 0.15)))
+	health_bar.add_theme_stylebox_override("fill", _progress_style(Color(0.15, 0.88, 0.48)))
 	button.add_child(health_bar)
 	_card_list.add_child(button)
-	_cards[survivor] = {"button": button, "health": health_bar, "badge": badge, "status": ""}
+	_cards[survivor] = {
+		"button": button, "health": health_bar, "badge": badge,
+		"name": name_label, "level": level_label, "role": role_label,
+		"status_label": status_label, "status": "",
+	}
 
 
 func _update_card(survivor: Survivor) -> void:
@@ -106,10 +141,18 @@ func _update_card(survivor: Survivor) -> void:
 	var button := entry["button"] as Button
 	var health_bar := entry["health"] as ProgressBar
 	var badge := entry["badge"] as Label
+	var name_label := entry["name"] as Label
+	var level_label := entry["level"] as Label
+	var role_label := entry["role"] as Label
+	var status_label := entry["status_label"] as Label
 	var current := survivor.health.current_health if survivor.health != null else 0
 	var maximum := survivor.health.max_health if survivor.health != null else survivor.max_health
-	badge.text = survivor.survivor_name.left(1).to_upper()
-	button.text = "       %s  L%d\n       %s • %s" % [survivor.survivor_name.to_upper(), survivor.level, Survivor.name_for_kind(survivor.kind), survivor.status_name().capitalize()]
+	badge.text = _role_icon(survivor.kind)
+	name_label.text = survivor.survivor_name.to_upper()
+	level_label.text = "LV %d" % survivor.level
+	role_label.text = Survivor.name_for_kind(survivor.kind).to_upper()
+	status_label.text = "● %s" % survivor.status_name()
+	status_label.add_theme_color_override("font_color", _status_color(survivor))
 	health_bar.max_value = maximum
 	health_bar.value = current
 	if entry["status"] != survivor.status_name():
@@ -277,8 +320,22 @@ func _badge_style(survivor: Survivor) -> StyleBoxFlat:
 	style.bg_color = Color(role_color.r * 0.35, role_color.g * 0.35, role_color.b * 0.35, 1.0)
 	style.border_color = role_color
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
+	style.set_corner_radius_all(19)
 	return style
+
+
+func _progress_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.set_corner_radius_all(4)
+	return style
+
+
+func _role_icon(kind: Survivor.SurvivorKind) -> String:
+	match kind:
+		Survivor.SurvivorKind.MEDIC: return "+"
+		Survivor.SurvivorKind.SCOUT: return "◎"
+		_: return "◆"
 
 
 func _action_style(color: Color) -> StyleBoxFlat:
