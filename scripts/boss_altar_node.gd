@@ -44,6 +44,12 @@ func _perform_interaction(_interacting_player: PlayerController) -> void:
 
 	boss_fight_requested.emit()
 	consume()
+	# Keep this node alive until the boss dies. The completion callback below is
+	# owned by this altar; freeing it here would disconnect that callback and the
+	# victory screen would never appear. Hide/disable it during the encounter.
+	visible = false
+	monitoring = false
+	monitorable = false
 	print("[BossAltar] Boss summoned!")
 
 	var boss: Boss = boss_scene.instantiate()
@@ -63,8 +69,5 @@ func _perform_interaction(_interacting_player: PlayerController) -> void:
 		if victory_screen_path != NodePath(""):
 			var screen := get_tree().current_scene.get_node(victory_screen_path) as BossVictoryScreen
 			screen.show_victory(boss.currency_reward)
+		queue_free()
 	)
-
-	# One-time use -- the altar itself disappears once the boss is
-	# summoned, so it can't be triggered again.
-	queue_free()
