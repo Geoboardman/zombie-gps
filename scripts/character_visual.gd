@@ -19,7 +19,12 @@ func play_clip(clip_name: String, blend := 0.15, force := false) -> void:
 	if _animation_player == null or (_locked and not force):
 		return
 	var resolved := _resolve_clip(clip_name)
-	if resolved == "" or _animation_player.current_animation == resolved:
+	if resolved == "":
+		return
+	var animation := _animation_player.get_animation(resolved)
+	if animation != null:
+		animation.loop_mode = Animation.LOOP_LINEAR
+	if _animation_player.current_animation == resolved and _animation_player.is_playing():
 		return
 	_generation += 1
 	_animation_player.play(resolved, blend)
@@ -34,8 +39,10 @@ func play_once(clip_name: String, return_clip: String, fallback_duration := 0.35
 	_generation += 1
 	var generation := _generation
 	_locked = true
-	_animation_player.play(resolved, 0.05)
 	var animation := _animation_player.get_animation(resolved)
+	if animation != null:
+		animation.loop_mode = Animation.LOOP_NONE
+	_animation_player.play(resolved, 0.05)
 	var duration: float = animation.length if animation != null else fallback_duration
 	get_tree().create_timer(maxf(0.08, minf(duration, fallback_duration))).timeout.connect(func():
 		if not is_instance_valid(self) or generation != _generation:
@@ -53,8 +60,10 @@ func play_death() -> float:
 		return 0.65
 	_generation += 1
 	_locked = true
-	_animation_player.play(resolved, 0.05)
 	var animation := _animation_player.get_animation(resolved)
+	if animation != null:
+		animation.loop_mode = Animation.LOOP_NONE
+	_animation_player.play(resolved, 0.05)
 	return clampf(animation.length if animation != null else 0.9, 0.45, 2.0)
 
 
