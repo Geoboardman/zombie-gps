@@ -62,6 +62,9 @@ func _draw() -> void:
 		elif poi is SupplyCacheNode:
 			color = Color(0.15, 0.75, 0.85)
 			label = "Supply"
+		elif poi is FieldKitNode:
+			color = Color(0.95, 0.55, 0.1)
+			label = "Field Kit"
 
 		draw_circle(Vector2(x, strip_height / 2.0), 6.0, color)
 		draw_string(
