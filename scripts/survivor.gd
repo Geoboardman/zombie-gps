@@ -19,9 +19,6 @@ const NAMES := ["Lis", "Matt", "Sam", "Shaun"]
 @export var attack_range := 3.0
 @export var attack_damage := 8
 @export var attack_interval := 1.2
-@export var pistol_scene: PackedScene
-@export var rifle_scene: PackedScene
-@export var shotgun_scene: PackedScene
 @export_group("Medic")
 @export var heal_interval := 6.0
 @export var heal_amount := 8
@@ -55,7 +52,7 @@ func _ready() -> void:
 	_create_health(max_health)
 	if _visual != null:
 		_visual.play_clip("Idle_Gun")
-		_visual.attach_weapon(_weapon_scene_for_role())
+		_visual.select_embedded_weapon(weapon_name_for_kind(kind))
 
 
 func _physics_process(delta: float) -> void:
@@ -100,13 +97,6 @@ func _configure_role_stats() -> void:
 			attack_range = 5.5
 			attack_damage = 14
 			attack_interval = 1.8
-
-
-func _weapon_scene_for_role() -> PackedScene:
-	match kind:
-		SurvivorKind.FIGHTER: return shotgun_scene
-		SurvivorKind.SCOUT: return rifle_scene
-		_: return pistol_scene
 
 
 func _create_health(current: int) -> void:
@@ -246,6 +236,13 @@ static func description_for_kind(value: SurvivorKind) -> String:
 		SurvivorKind.MEDIC: return "fights and heals the wounded"
 		SurvivorKind.SCOUT: return "long-range precision fire"
 		_: return "fights alongside the party"
+
+
+static func weapon_name_for_kind(value: SurvivorKind) -> String:
+	match value:
+		SurvivorKind.FIGHTER: return "Shotgun"
+		SurvivorKind.SCOUT: return "Rifle"
+		_: return "Pistol"
 
 
 func _play_shot_feedback(target_position: Vector3) -> void:
