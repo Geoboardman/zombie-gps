@@ -25,7 +25,7 @@ func show_choices(player: PlayerController, choices: Array) -> void:
 	_choices.clear()
 	_choices.assign(choices)
 	var title := get_node(title_path) as Label
-	title.text = "CHOOSE YOUR FIRST ADVANTAGE"
+	title.text = "FIELD KIT RECOVERED — CHOOSE ONE"
 	for i in range(_buttons.size()):
 		_buttons[i].text = _button_text(_choices[i] as Upgrades.Type)
 	visible = true
