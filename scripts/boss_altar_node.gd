@@ -13,6 +13,7 @@ signal boss_defeated(reward_awarded: int)
 @export var boss_scene: PackedScene
 @export var interact_action := "ui_accept" # default Enter/Space -- swap for a dedicated "interact" action later if you want
 @export var district := 1
+var boss_mutation := 0
 
 var _player_in_range := false
 var _player: PlayerController
@@ -27,8 +28,8 @@ func _on_player_entered(player: PlayerController) -> void:
 	super._on_player_entered(player)
 	_player_in_range = true
 	_player = player
-	action_label = "SUMMON DISTRICT %d BOSS" % district
-	detail_text = "This starts the boss fight"
+	action_label = "SUMMON BOSS"
+	detail_text = "DISTRICT %d  •  %s" % [district, Boss.mutation_name(boss_mutation)]
 
 
 func _on_player_exited(exiting_player: PlayerController) -> void:
@@ -52,6 +53,7 @@ func _perform_interaction(_interacting_player: PlayerController) -> void:
 	print("[BossAltar] Boss summoned!")
 
 	var boss: Boss = boss_scene.instantiate()
+	boss.mutation = boss_mutation
 	var multiplier := 1.0 + float(district - 1) * 0.5
 	boss.max_health = int(round(boss.max_health * multiplier))
 	boss.attack_damage = int(round(boss.attack_damage * (1.0 + float(district - 1) * 0.2)))
