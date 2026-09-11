@@ -132,3 +132,18 @@ District pressure rotates between Runner Surge (runner-heavy waves), Brute
 Territory (brute-heavy waves), and The Horde (larger waves). This is deliberately
 a small first modifier set for testing whether repeated districts feel different
 before adding bespoke hazards or map events.
+
+## Active abilities and builds
+
+The current prototype ability kit is designed for one-tap, auto-targeted combat:
+
+- Stasis Pulse freezes nearby normal zombies and slows bosses without pushing
+  enemies outside weapon range.
+- Field Dressing restores 35% maximum health over eight seconds.
+- Frag Grenade targets the densest nearby enemy cluster, telegraphs its landing
+  area, and deals visible area damage.
+
+Every searched supply cache now pauses for a three-upgrade choice. Build-shaping
+options include Double Tap, Piercing Rounds, Executioner, Burning Presence,
+Adrenal Response, and Cluster Grenade alongside the original stat upgrades.
+Acquired upgrades appear in the compact BUILD summary on the HUD.
