@@ -100,7 +100,7 @@ func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
 		return
 	direction = direction.normalized()
 
-	velocity = direction * speed
+	velocity = direction * speed * get_speed_multiplier()
 	move_and_slide()
 	look_at(global_position + direction, Vector3.UP)
 
