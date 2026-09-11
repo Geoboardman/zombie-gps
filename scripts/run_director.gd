@@ -249,6 +249,7 @@ func _on_boss_defeated(reward_awarded: int) -> void:
 	for node: Node in get_tree().get_nodes_in_group("survivors"):
 		var survivor := node as Survivor
 		if survivor != null:
+			survivor.bosses_survived += 1
 			survivor.award_experience(5)
 	_add_heat(3.0)
 	_active_target = null
