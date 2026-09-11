@@ -82,23 +82,34 @@ func _create_card(survivor: Survivor) -> void:
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_size_override("font_size", 12)
 	button.pressed.connect(_open_detail.bind(survivor))
+	var badge := Label.new()
+	badge.position = Vector2(7.0, 7.0)
+	badge.size = Vector2(30.0, 30.0)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 16)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_theme_stylebox_override("normal", _badge_style(survivor))
+	button.add_child(badge)
 	var health_bar := ProgressBar.new()
-	health_bar.position = Vector2(10.0, 39.0)
-	health_bar.size = Vector2(144.0, 8.0)
+	health_bar.position = Vector2(44.0, 39.0)
+	health_bar.size = Vector2(110.0, 8.0)
 	health_bar.show_percentage = false
 	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(health_bar)
 	_card_list.add_child(button)
-	_cards[survivor] = {"button": button, "health": health_bar, "status": ""}
+	_cards[survivor] = {"button": button, "health": health_bar, "badge": badge, "status": ""}
 
 
 func _update_card(survivor: Survivor) -> void:
 	var entry: Dictionary = _cards[survivor]
 	var button := entry["button"] as Button
 	var health_bar := entry["health"] as ProgressBar
+	var badge := entry["badge"] as Label
 	var current := survivor.health.current_health if survivor.health != null else 0
 	var maximum := survivor.health.max_health if survivor.health != null else survivor.max_health
-	button.text = "  %s   L%d\n  %s  •  %s" % [survivor.survivor_name.to_upper(), survivor.level, Survivor.name_for_kind(survivor.kind), survivor.status_name().capitalize()]
+	badge.text = survivor.survivor_name.left(1).to_upper()
+	button.text = "       %s  L%d\n       %s • %s" % [survivor.survivor_name.to_upper(), survivor.level, Survivor.name_for_kind(survivor.kind), survivor.status_name().capitalize()]
 	health_bar.max_value = maximum
 	health_bar.value = current
 	if entry["status"] != survivor.status_name():
@@ -257,6 +268,16 @@ func _panel_style() -> StyleBoxFlat:
 	style.border_color = Color(0.2, 0.9, 0.9)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(18)
+	return style
+
+
+func _badge_style(survivor: Survivor) -> StyleBoxFlat:
+	var role_color: Color = ROLE_COLORS.get(survivor.kind, Color(0.3, 0.7, 0.75))
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(role_color.r * 0.35, role_color.g * 0.35, role_color.b * 0.35, 1.0)
+	style.border_color = role_color
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
 	return style
 
 
