@@ -228,9 +228,9 @@ func _apply_regen(delta: float) -> void:
 func _process_field_dressing(delta: float) -> void:
 	if _field_dressing_timer <= 0.0:
 		return
-	var active_delta := min(delta, _field_dressing_timer)
+	var active_delta: float = minf(delta, _field_dressing_timer)
 	_field_dressing_timer -= active_delta
-	var heal_this_frame := (_field_dressing_remaining / max(_field_dressing_timer + active_delta, 0.001)) * active_delta
+	var heal_this_frame: float = (_field_dressing_remaining / maxf(_field_dressing_timer + active_delta, 0.001)) * active_delta
 	_regen_accumulator += heal_this_frame
 	_field_dressing_remaining = max(0.0, _field_dressing_remaining - heal_this_frame)
 	if _regen_accumulator >= 1.0:
@@ -329,7 +329,7 @@ func is_field_dressing_active() -> bool:
 
 # Auto-targets the densest nearby cluster, so it stays a single safe tap.
 func frag_grenade() -> void:
-	var target := _densest_enemy_position()
+	var target: Variant = _densest_enemy_position()
 	if target == null:
 		return
 	_spawn_grenade_telegraph(target)
