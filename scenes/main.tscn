@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=42 format=3]
 
 [ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
 [ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
@@ -54,16 +54,16 @@ albedo_color = Color(0.16, 0.25, 0.18, 1)
 shading_mode = 0
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_status"]
-bg_color = Color(0.025, 0.035, 0.045, 0.9)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.3, 0.36, 0.4, 0.9)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.018, 0.055, 0.068, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.62, 0.68, 0.72)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_health_bg"]
 bg_color = Color(0.12, 0.14, 0.16, 1)
@@ -73,23 +73,73 @@ corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_health_fill"]
-bg_color = Color(0.25, 0.78, 0.42, 1)
+bg_color = Color(0.12, 0.86, 0.45, 1)
 corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_objective"]
-bg_color = Color(0.025, 0.035, 0.045, 0.9)
+bg_color = Color(0.018, 0.055, 0.068, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.34, 0.65, 0.7, 0.72)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_action"]
+bg_color = Color(0.018, 0.12, 0.15, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.95, 0.9, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_action_hover"]
+bg_color = Color(0.03, 0.22, 0.25, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.35, 1, 0.94, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_toast"]
+bg_color = Color(0.018, 0.055, 0.068, 0.92)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.24, 0.3, 0.34, 0.9)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+border_color = Color(0.2, 0.85, 0.82, 0.8)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_rest"]
+bg_color = Color(0.018, 0.055, 0.068, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.65, 0.72, 0.75)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
 
 [node name="Main" type="Node3D"]
 
@@ -192,26 +242,31 @@ boss_altar_scene = ExtResource("12_bossscn")
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="StatusPanel" type="Panel" parent="HUD"]
-offset_left = 16.0
-offset_top = 14.0
-offset_right = 524.0
-offset_bottom = 72.0
+anchor_right = 0.58
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -4.0
+offset_bottom = 62.0
 theme_override_styles/panel = SubResource("StyleBox_status")
 
 [node name="HPTitle" type="Label" parent="HUD"]
-offset_left = 30.0
-offset_top = 20.0
-offset_right = 82.0
-offset_bottom = 48.0
-theme_override_colors/font_color = Color(0.68, 0.75, 0.79, 1)
-theme_override_font_sizes/font_size = 15
-text = "HEALTH"
+anchor_right = 0.58
+offset_left = 24.0
+offset_top = 19.0
+offset_right = -252.0
+offset_bottom = 54.0
+theme_override_colors/font_color = Color(0.25, 1, 0.67, 1)
+theme_override_font_sizes/font_size = 25
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="HealthBar" type="ProgressBar" parent="HUD"]
-offset_left = 92.0
-offset_top = 23.0
-offset_right = 346.0
-offset_bottom = 48.0
+anchor_right = 0.58
+offset_left = 57.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 50.0
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBox_health_bg")
 theme_override_styles/fill = SubResource("StyleBox_health_fill")
@@ -219,10 +274,11 @@ value = 100.0
 show_percentage = false
 
 [node name="PlayerHPLabel" type="Label" parent="HUD"]
-offset_left = 92.0
-offset_top = 23.0
-offset_right = 346.0
-offset_bottom = 48.0
+anchor_right = 0.58
+offset_left = 57.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 50.0
 mouse_filter = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
@@ -232,71 +288,69 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CurrencyLabel" type="Label" parent="HUD"]
-offset_left = 366.0
-offset_top = 21.0
-offset_right = 510.0
-offset_bottom = 52.0
+anchor_left = 0.59
+anchor_right = 0.78
+offset_left = 2.0
+offset_top = 12.0
+offset_right = -2.0
+offset_bottom = 62.0
 theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 20
-text = "◆  0"
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBox_status")
+text = "●  0"
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="CompassHUD" type="Control" parent="HUD"]
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -254.0
-offset_top = 82.0
-offset_right = 254.0
-offset_bottom = 138.0
+anchor_left = 0.08
+anchor_right = 0.92
+offset_top = 72.0
+offset_bottom = 110.0
 script = ExtResource("15_cmps")
 player_path = NodePath("../../Player")
-strip_width = 508.0
-strip_height = 36.0
+strip_width = 454.0
+strip_height = 34.0
 
 [node name="ObjectivePanel" type="Panel" parent="HUD"]
-offset_left = 16.0
-offset_top = 148.0
-offset_right = 524.0
-offset_bottom = 244.0
+anchor_left = 0.13
+anchor_right = 0.87
+offset_top = 116.0
+offset_bottom = 166.0
 theme_override_styles/panel = SubResource("StyleBox_objective")
 
 [node name="ObjectiveTitle" type="Label" parent="HUD/ObjectivePanel"]
 anchor_left = 0.04
-anchor_top = 0.08
-anchor_right = 0.96
-anchor_bottom = 0.48
-offset_left = 8.0
-offset_right = -8.0
+anchor_right = 0.76
+anchor_bottom = 1.0
+offset_left = 10.0
 theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "SCANNING THE OUTBREAK"
-horizontal_alignment = 1
+text_overrun_behavior = 3
 vertical_alignment = 1
-autowrap_mode = 2
 
 [node name="ObjectiveDetail" type="Label" parent="HUD/ObjectivePanel"]
-anchor_left = 0.04
-anchor_top = 0.5
+anchor_left = 0.76
 anchor_right = 0.96
-anchor_bottom = 0.94
-offset_left = 8.0
-offset_right = -8.0
+anchor_bottom = 1.0
 theme_override_colors/font_color = Color(0.88, 0.9, 0.92, 1)
-theme_override_font_sizes/font_size = 15
-text = "Loading the streets around you…"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+text = "LOCATING"
+horizontal_alignment = 2
 vertical_alignment = 1
-autowrap_mode = 2
 
 [node name="ToastLabel" type="Label" parent="HUD"]
-offset_left = 24.0
-offset_top = 254.0
-offset_right = 516.0
-offset_bottom = 334.0
+anchor_left = 0.08
+anchor_right = 0.92
+anchor_top = 0.66
+anchor_bottom = 0.66
+offset_top = -28.0
+offset_bottom = 28.0
 theme_override_colors/font_color = Color(0.25, 0.95, 0.9, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
-theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 22
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBox_toast")
 text = "OUTBREAK DETECTED"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -306,10 +360,10 @@ modulate = Color(1, 1, 1, 0)
 
 [node name="BuildLabel" type="Label" parent="HUD"]
 visible = false
-offset_left = 24.0
-offset_top = 338.0
-offset_right = 516.0
-offset_bottom = 406.0
+anchor_left = 0.1
+anchor_right = 0.9
+anchor_top = 0.61
+anchor_bottom = 0.67
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.72, 0.82, 0.88, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
@@ -331,24 +385,28 @@ action_button_path = NodePath("ActionButton")
 detail_label_path = NodePath("DetailLabel")
 
 [node name="DetailLabel" type="Label" parent="HUD/InteractionController"]
-anchor_left = 0.1
-anchor_top = 0.655
-anchor_right = 0.9
-anchor_bottom = 0.705
+anchor_left = 0.15
+anchor_top = 0.715
+anchor_right = 0.85
+anchor_bottom = 0.75
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 0.93, 0.95, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 15
 horizontal_alignment = 1
 
 [node name="ActionButton" type="Button" parent="HUD/InteractionController"]
-anchor_left = 0.14
-anchor_top = 0.71
-anchor_right = 0.86
-anchor_bottom = 0.79
+anchor_left = 0.22
+anchor_top = 0.755
+anchor_right = 0.78
+anchor_bottom = 0.815
 mouse_filter = 0
-theme_override_font_sizes/font_size = 23
+theme_override_colors/font_color = Color(0.9, 1, 1, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBox_action")
+theme_override_styles/hover = SubResource("StyleBox_action_hover")
+theme_override_styles/pressed = SubResource("StyleBox_action_hover")
 text = "INTERACT"
 
 [node name="AbilityBar" type="Control" parent="HUD"]
@@ -357,9 +415,9 @@ anchor_right = 0.5
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -130.0
-offset_top = -150.0
+offset_top = -132.0
 offset_right = 130.0
-offset_bottom = -20.0
+offset_bottom = -12.0
 script = ExtResource("16_abar")
 player_path = NodePath("../../Player")
 knockback_button_path = NodePath("KnockbackButton")
@@ -369,34 +427,34 @@ overcharge_button_path = NodePath("OverchargeButton")
 [node name="KnockbackButton" type="Control" parent="HUD/AbilityBar"]
 offset_left = 0.0
 offset_top = 0.0
-offset_right = 72.0
-offset_bottom = 112.0
+offset_right = 64.0
+offset_bottom = 104.0
 script = ExtResource("17_abtn")
-radius = 36.0
+radius = 32.0
 icon_color = Color(0.3, 0.55, 0.9, 1)
 label_text = "Q"
 ability_name = "STASIS"
 icon_type = 0
 
 [node name="SecondWindButton" type="Control" parent="HUD/AbilityBar"]
-offset_left = 94.0
+offset_left = 98.0
 offset_top = 0.0
-offset_right = 166.0
-offset_bottom = 112.0
+offset_right = 162.0
+offset_bottom = 104.0
 script = ExtResource("17_abtn")
-radius = 36.0
+radius = 32.0
 icon_color = Color(0.3, 0.8, 0.4, 1)
 label_text = "E"
 ability_name = "DRESSING"
 icon_type = 1
 
 [node name="OverchargeButton" type="Control" parent="HUD/AbilityBar"]
-offset_left = 188.0
+offset_left = 196.0
 offset_top = 0.0
 offset_right = 260.0
-offset_bottom = 112.0
+offset_bottom = 104.0
 script = ExtResource("17_abtn")
-radius = 36.0
+radius = 32.0
 icon_color = Color(0.9, 0.5, 0.15, 1)
 label_text = "R"
 ability_name = "FRAG"
@@ -547,12 +605,16 @@ resume_button_path = NodePath("RestOverlay/Center/VBox/ResumeButton")
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -112.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 64.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 62.0
 mouse_filter = 0
-theme_override_font_sizes/font_size = 18
-text = "REST"
+theme_override_colors/font_color = Color(0.86, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_rest")
+theme_override_styles/hover = SubResource("StyleBox_action_hover")
+theme_override_styles/pressed = SubResource("StyleBox_action_hover")
+text = "☾  REST"
 
 [node name="RestOverlay" type="ColorRect" parent="HUD/RestControl"]
 anchor_right = 1.0
