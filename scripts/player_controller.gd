@@ -364,12 +364,26 @@ func stasis_pulse() -> void:
 func field_dressing() -> void:
 	_field_dressing_timer = field_dressing_duration
 	_field_dressing_remaining = health.max_health * field_dressing_heal_percent
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.apply_field_dressing(field_dressing_duration, field_dressing_heal_percent)
 	if _mesh_material != null:
 		_mesh_material.albedo_color = DRESSING_COLOR
 
 
 func is_field_dressing_active() -> bool:
 	return _field_dressing_timer > 0.0
+
+
+func party_needs_dressing() -> bool:
+	if health.current_health < health.max_health:
+		return true
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null and survivor.needs_field_dressing():
+			return true
+	return false
 
 
 # Auto-targets the densest nearby cluster, so it stays a single safe tap.
