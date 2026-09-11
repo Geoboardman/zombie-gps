@@ -171,6 +171,7 @@ objective_detail_path = NodePath("../HUD/ObjectivePanel/ObjectiveDetail")
 toast_label_path = NodePath("../HUD/ToastLabel")
 upgrade_choice_path = NodePath("../HUD/UpgradeChoice")
 victory_screen_path = NodePath("../HUD/BossVictoryScreen")
+zombie_spawner_path = NodePath("../ZombieSpawner")
 starter_zombie_scene = ExtResource("9_zscn")
 field_kit_scene = ExtResource("25_fieldkit")
 supply_cache_scene = ExtResource("22_cache")
@@ -394,6 +395,15 @@ theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 text = "YOU DIED"
 
+[node name="LostLabel" type="Label" parent="HUD/GameOverScreen/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(430, 70)
+theme_override_colors/font_color = Color(0.95, 0.62, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "0 CARRIED GOLD LOST"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
 [node name="RestartButton" type="Button" parent="HUD/GameOverScreen/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(160, 50)
 theme_override_font_sizes/font_size = 24
@@ -419,28 +429,34 @@ anchor_bottom = 1.0
 theme_override_constants/separation = 20
 
 [node name="TitleLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
-theme_override_font_sizes/font_size = 48
+custom_minimum_size = Vector2(470, 58)
+theme_override_font_sizes/font_size = 34
 horizontal_alignment = 1
 text = "BOSS DEFEATED"
 
 [node name="RewardLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
-theme_override_font_sizes/font_size = 24
+custom_minimum_size = Vector2(470, 40)
+theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 text = "+0 Gold"
 
 [node name="StatsLabel" type="Label" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
 visible = false
+custom_minimum_size = Vector2(470, 190)
 theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 text = "RUN SUMMARY"
 
 [node name="ContinueButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(200, 50)
+custom_minimum_size = Vector2(470, 58)
 theme_override_font_sizes/font_size = 22
 text = "PUSH DEEPER"
 
 [node name="LeaveButton" type="Button" parent="HUD/BossVictoryScreen/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(200, 50)
+custom_minimum_size = Vector2(470, 58)
 theme_override_font_sizes/font_size = 22
 text = "EXTRACT RUN"
 
