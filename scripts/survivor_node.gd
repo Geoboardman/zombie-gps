@@ -1,5 +1,5 @@
 class_name SurvivorNode
-extends MapNode
+extends InteractableMapNode
 
 signal recruited(survivor: Survivor)
 
@@ -22,13 +22,16 @@ func _ready() -> void:
 
 	_label = get_node("RecruitLabel") as Label3D
 	_label.text = "Recruit\n%s" % Survivor.name_for_kind(_chosen_kind)
+	action_label = "RECRUIT %s" % Survivor.name_for_kind(_chosen_kind).to_upper()
+	detail_text = _description_for_kind(_chosen_kind)
 
 
-func _on_player_entered(player: PlayerController) -> void:
+func _perform_interaction(player: PlayerController) -> void:
 	if survivor_scene == null:
 		push_error("[SurvivorNode] No survivor_scene assigned")
 		queue_free()
 		return
+	consume()
 
 	var survivor: Survivor = survivor_scene.instantiate()
 	survivor.kind = _chosen_kind
@@ -48,3 +51,15 @@ func _on_player_entered(player: PlayerController) -> void:
 	recruited.emit(survivor)
 
 	queue_free()
+
+
+func _description_for_kind(value: Survivor.SurvivorKind) -> String:
+	match value:
+		Survivor.SurvivorKind.FIGHTER:
+			return "Fighter — attacks nearby infected"
+		Survivor.SurvivorKind.MEDIC:
+			return "Medic — periodically restores health"
+		Survivor.SurvivorKind.SCOUT:
+			return "Scout — increases gold recovered"
+		_:
+			return "Invite this survivor to join your party"
