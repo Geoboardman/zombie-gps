@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/boss_altar_node.gd" id="1_boss"]
 [ext_resource type="PackedScene" path="res://scenes/boss.tscn" id="2_bossscn"]

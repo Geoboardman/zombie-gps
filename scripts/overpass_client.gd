@@ -27,12 +27,6 @@ const OVERPASS_URL := "https://overpass-api.de/api/interpreter"
 @export var use_cache := true
 @export var cache_dir := "user://map_cache/"
 
-# Cache grid cell size in degrees. ~0.01 degrees is roughly 1.1km at the
-# equator -- coarser than a single fetch radius, so nearby fetches
-# (e.g. as you walk around within the same neighborhood) reuse the same
-# cached cell instead of each saving/loading separately.
-const CACHE_GRID_SIZE: float = 0.01
-
 var _pending_cache_key := ""
 
 
@@ -44,9 +38,7 @@ func _ready() -> void:
 
 # Bounding box in degrees: south, west, north, east.
 func fetch_area(south: float, west: float, north: float, east: float) -> void:
-	var center_lat := (south + north) / 2.0
-	var center_lon := (west + east) / 2.0
-	var cache_key := _cache_key(center_lat, center_lon)
+	var cache_key := _cache_key(south, west, north, east)
 
 	if use_cache:
 		var cached: Variant = _load_from_cache(cache_key)
@@ -97,10 +89,10 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	features_loaded.emit()
 
 
-func _cache_key(lat: float, lon: float) -> String:
-	var snapped_lat: float = floor(lat / CACHE_GRID_SIZE) * CACHE_GRID_SIZE
-	var snapped_lon: float = floor(lon / CACHE_GRID_SIZE) * CACHE_GRID_SIZE
-	return "%.4f_%.4f" % [snapped_lat, snapped_lon]
+func _cache_key(south: float, west: float, north: float, east: float) -> String:
+	# Key the actual request bounds. The former coarse center-cell key could
+	# return a neighboring 500m map section that did not contain the player.
+	return "%.4f_%.4f_%.4f_%.4f" % [south, west, north, east]
 
 
 func _cache_path(key: String) -> String:

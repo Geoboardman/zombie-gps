@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/gps_manager.gd" id="1_gpsm"]
 [ext_resource type="Script" path="res://scripts/overpass_client.gd" id="2_ovps"]
@@ -20,6 +20,10 @@
 [ext_resource type="Script" path="res://scripts/game_over_screen.gd" id="18_gover"]
 [ext_resource type="PackedScene" path="res://scenes/survivor_node.tscn" id="19_svnode"]
 [ext_resource type="Script" path="res://scripts/boss_victory_screen.gd" id="20_bvic"]
+[ext_resource type="Script" path="res://scripts/run_director.gd" id="21_director"]
+[ext_resource type="PackedScene" path="res://scenes/supply_cache_node.tscn" id="22_cache"]
+[ext_resource type="Script" path="res://scripts/upgrade_choice_ui.gd" id="23_upgrade_ui"]
+[ext_resource type="Script" path="res://scripts/rest_control.gd" id="24_rest"]
 
 [sub_resource type="Resource" id="Resource_style1"]
 script = ExtResource("7_style")
@@ -38,6 +42,13 @@ height = 1.8
 radius = 0.4
 height = 1.8
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(1200, 1200)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.16, 0.25, 0.18, 1)
+shading_mode = 0
+
 [node name="Main" type="Node3D"]
 
 [node name="GPSManager" type="Node" parent="."]
@@ -45,6 +56,10 @@ script = ExtResource("1_gpsm")
 
 [node name="OverpassClient" type="HTTPRequest" parent="."]
 script = ExtResource("2_ovps")
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
 
 [node name="MapBuilder" type="Node3D" parent="."]
 script = ExtResource("3_mapb")
@@ -82,10 +97,11 @@ current = true
 script = ExtResource("8_zspn")
 player_path = NodePath("../Player")
 zombie_scenes = Array[PackedScene]([ExtResource("9_zscn"), ExtResource("13_zrun"), ExtResource("14_zbrt")])
-spawn_count = 5
+spawn_count = 2
 spawn_radius_min = 12.0
 spawn_radius_max = 30.0
 overpass_client_path = NodePath("../OverpassClient")
+run_director_path = NodePath("../RunDirector")
 
 [node name="NodeSpawner" type="Node3D" parent="."]
 script = ExtResource("10_nspn")
@@ -93,15 +109,31 @@ player_path = NodePath("../Player")
 shop_node_scene = ExtResource("11_shopscn")
 boss_altar_scene = ExtResource("12_bossscn")
 survivor_node_scene = ExtResource("19_svnode")
-shop_count = 3
+shop_count = 1
 shop_radius_min = 15.0
 shop_radius_max = 30.0
-survivor_count = 2
+survivor_count = 0
 survivor_radius_min = 20.0
 survivor_radius_max = 35.0
 boss_altar_radius_min = 40.0
 boss_altar_radius_max = 50.0
+boss_altar_count = 0
 overpass_client_path = NodePath("../OverpassClient")
+
+[node name="RunDirector" type="Node" parent="."]
+script = ExtResource("21_director")
+player_path = NodePath("../Player")
+gps_manager_path = NodePath("../GPSManager")
+overpass_client_path = NodePath("../OverpassClient")
+objective_title_path = NodePath("../HUD/ObjectivePanel/ObjectiveTitle")
+objective_detail_path = NodePath("../HUD/ObjectivePanel/ObjectiveDetail")
+toast_label_path = NodePath("../HUD/ToastLabel")
+upgrade_choice_path = NodePath("../HUD/UpgradeChoice")
+boss_action_button_path = NodePath("../HUD/BossActionButton")
+starter_zombie_scene = ExtResource("9_zscn")
+supply_cache_scene = ExtResource("22_cache")
+survivor_node_scene = ExtResource("19_svnode")
+boss_altar_scene = ExtResource("12_bossscn")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -124,14 +156,64 @@ text = "Gold: 0"
 [node name="CompassHUD" type="Control" parent="HUD"]
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -300.0
-offset_top = 20.0
-offset_right = 300.0
-offset_bottom = 90.0
+offset_left = -250.0
+offset_top = 180.0
+offset_right = 250.0
+offset_bottom = 250.0
 script = ExtResource("15_cmps")
 player_path = NodePath("../../Player")
-strip_width = 600.0
+strip_width = 500.0
 strip_height = 36.0
+
+[node name="ObjectivePanel" type="ColorRect" parent="HUD"]
+anchor_left = 0.05
+anchor_top = 0.105
+anchor_right = 0.95
+anchor_bottom = 0.185
+color = Color(0.03, 0.04, 0.05, 0.82)
+
+[node name="ObjectiveTitle" type="Label" parent="HUD/ObjectivePanel"]
+anchor_left = 0.04
+anchor_top = 0.08
+anchor_right = 0.96
+anchor_bottom = 0.48
+theme_override_colors/font_color = Color(0.95, 0.78, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "SCANNING THE OUTBREAK"
+horizontal_alignment = 1
+
+[node name="ObjectiveDetail" type="Label" parent="HUD/ObjectivePanel"]
+anchor_left = 0.04
+anchor_top = 0.5
+anchor_right = 0.96
+anchor_bottom = 0.94
+theme_override_colors/font_color = Color(0.88, 0.9, 0.92, 1)
+theme_override_font_sizes/font_size = 16
+text = "Loading the streets around you…"
+horizontal_alignment = 1
+
+[node name="ToastLabel" type="Label" parent="HUD"]
+anchor_left = 0.1
+anchor_top = 0.22
+anchor_right = 0.9
+anchor_bottom = 0.28
+theme_override_colors/font_color = Color(0.25, 0.95, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 28
+text = "OUTBREAK DETECTED"
+horizontal_alignment = 1
+vertical_alignment = 1
+modulate = Color(1, 1, 1, 0)
+
+[node name="BossActionButton" type="Button" parent="HUD"]
+anchor_left = 0.18
+anchor_top = 0.72
+anchor_right = 0.82
+anchor_bottom = 0.79
+visible = false
+theme_override_font_sizes/font_size = 24
+text = "SUMMON BOSS"
 
 [node name="AbilityBar" type="Control" parent="HUD"]
 anchor_left = 0.5
@@ -248,6 +330,97 @@ text = "Continue Deeper"
 custom_minimum_size = Vector2(200, 50)
 theme_override_font_sizes/font_size = 22
 text = "Leave (Bank Run)"
+
+[node name="UpgradeChoice" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+script = ExtResource("23_upgrade_ui")
+title_path = NodePath("CenterContainer/Panel/VBox/Title")
+button_paths = Array[NodePath]([NodePath("CenterContainer/Panel/VBox/Choice1"), NodePath("CenterContainer/Panel/VBox/Choice2"), NodePath("CenterContainer/Panel/VBox/Choice3")])
+
+[node name="Backdrop" type="ColorRect" parent="HUD/UpgradeChoice"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.78)
+
+[node name="CenterContainer" type="CenterContainer" parent="HUD/UpgradeChoice"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="HUD/UpgradeChoice/CenterContainer"]
+custom_minimum_size = Vector2(460, 420)
+
+[node name="VBox" type="VBoxContainer" parent="HUD/UpgradeChoice/CenterContainer/Panel"]
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="HUD/UpgradeChoice/CenterContainer/Panel/VBox"]
+theme_override_font_sizes/font_size = 26
+text = "CHOOSE YOUR FIRST ADVANTAGE"
+horizontal_alignment = 1
+
+[node name="Choice1" type="Button" parent="HUD/UpgradeChoice/CenterContainer/Panel/VBox"]
+custom_minimum_size = Vector2(420, 88)
+theme_override_font_sizes/font_size = 20
+text = "HOLLOW POINTS"
+
+[node name="Choice2" type="Button" parent="HUD/UpgradeChoice/CenterContainer/Panel/VBox"]
+custom_minimum_size = Vector2(420, 88)
+theme_override_font_sizes/font_size = 20
+text = "QUICK HANDS"
+
+[node name="Choice3" type="Button" parent="HUD/UpgradeChoice/CenterContainer/Panel/VBox"]
+custom_minimum_size = Vector2(420, 88)
+theme_override_font_sizes/font_size = 20
+text = "FIELD DRESSING"
+
+[node name="RestControl" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("24_rest")
+rest_button_path = NodePath("RestButton")
+overlay_path = NodePath("RestOverlay")
+resume_button_path = NodePath("RestOverlay/Center/VBox/ResumeButton")
+
+[node name="RestButton" type="Button" parent="HUD/RestControl"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -112.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 64.0
+mouse_filter = 0
+theme_override_font_sizes/font_size = 18
+text = "REST"
+
+[node name="RestOverlay" type="ColorRect" parent="HUD/RestControl"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+color = Color(0.02, 0.035, 0.045, 0.9)
+
+[node name="Center" type="CenterContainer" parent="HUD/RestControl/RestOverlay"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/RestControl/RestOverlay/Center"]
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="HUD/RestControl/RestOverlay/Center/VBox"]
+theme_override_font_sizes/font_size = 38
+text = "CAMPING"
+horizontal_alignment = 1
+
+[node name="Message" type="Label" parent="HUD/RestControl/RestOverlay/Center/VBox"]
+theme_override_font_sizes/font_size = 20
+text = "Run paused.\nRest and continue when ready."
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="HUD/RestControl/RestOverlay/Center/VBox"]
+custom_minimum_size = Vector2(240, 60)
+theme_override_font_sizes/font_size = 22
+text = "CONTINUE WALKING"
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-45, 30, 0)

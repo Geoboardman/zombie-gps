@@ -59,6 +59,9 @@ func _draw() -> void:
 		elif poi is SurvivorNode:
 			color = Color(0.85, 0.55, 0.25) # amber, matches survivor_node.tscn
 			label = "Survivor"
+		elif poi is SupplyCacheNode:
+			color = Color(0.15, 0.75, 0.85)
+			label = "Supply"
 
 		draw_circle(Vector2(x, strip_height / 2.0), 6.0, color)
 		draw_string(

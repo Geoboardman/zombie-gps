@@ -23,6 +23,7 @@ extends Node3D
 @export_group("Boss Altar Placement")
 @export var boss_altar_radius_min := 40.0
 @export var boss_altar_radius_max := 50.0
+@export var boss_altar_count := 1
 
 @export var overpass_client_path: NodePath
 
@@ -63,7 +64,7 @@ func _spawn_all() -> void:
 	for i in range(survivor_count):
 		_spawn_at_radius(survivor_node_scene, survivor_radius_min, survivor_radius_max)
 
-	if boss_altar_scene != null:
+	for i in range(boss_altar_count):
 		_spawn_at_radius(boss_altar_scene, boss_altar_radius_min, boss_altar_radius_max)
 
 

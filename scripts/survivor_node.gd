@@ -1,6 +1,8 @@
 class_name SurvivorNode
 extends MapNode
 
+signal recruited(survivor: Survivor)
+
 # Free to recruit -- finding someone alive is the reward, no currency
 # cost. Picks one random Survivor.SurvivorKind at spawn time and shows it
 # on a floating label, same pattern as ShopNode's upgrade preview.
@@ -43,5 +45,6 @@ func _on_player_entered(player: PlayerController) -> void:
 	survivor.global_position = player.global_position + Vector3(1.5, 0.0, 1.5)
 
 	print("[SurvivorNode] Recruited a %s!" % Survivor.name_for_kind(_chosen_kind))
+	recruited.emit(survivor)
 
 	queue_free()

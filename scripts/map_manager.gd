@@ -24,6 +24,10 @@ var _builder: MapBuilder
 var _last_fetch_lat := 0.0
 var _last_fetch_lon := 0.0
 var _has_fetched := false
+var _request_in_flight := false
+var _requested_lat := 0.0
+var _requested_lon := 0.0
+var _pending_location: Variant = null
 
 
 func _ready() -> void:
@@ -40,7 +44,11 @@ func _on_location_updated(lat: float, lon: float) -> void:
 	var needs_fetch := not _has_fetched \
 		or GeoMath.haversine_distance_meters(lat, lon, _last_fetch_lat, _last_fetch_lon) > refetch_trigger_meters
 
-	if needs_fetch:
+	if needs_fetch and _request_in_flight:
+		# Keep coordinates as 64-bit Variant floats. Vector2 components may not
+		# preserve meter-scale latitude/longitude changes.
+		_pending_location = {"lat": lat, "lon": lon}
+	elif needs_fetch:
 		_fetch_around(lat, lon)
 
 
@@ -58,17 +66,33 @@ func _fetch_around(lat: float, lon: float) -> void:
 	var west := lon - d_lon
 	var east := lon + d_lon
 
-	_last_fetch_lat = lat
-	_last_fetch_lon = lon
-	_has_fetched = true
+	_requested_lat = lat
+	_requested_lon = lon
+	_request_in_flight = true
 
 	print("[MapManager] Fetching map data around (%.5f, %.5f)" % [lat, lon])
 	_overpass.fetch_area(south, west, north, east)
 
 
 func _on_features_loaded() -> void:
+	_request_in_flight = false
+	_last_fetch_lat = _requested_lat
+	_last_fetch_lon = _requested_lon
+	_has_fetched = true
 	_builder.build_features(_overpass.last_features)
+	_fetch_pending_if_needed()
 
 
 func _on_fetch_failed(reason: String) -> void:
+	_request_in_flight = false
 	push_error("[MapManager] Fetch failed: %s" % reason)
+	_fetch_pending_if_needed()
+
+
+func _fetch_pending_if_needed() -> void:
+	if _pending_location == null:
+		return
+	var pending: Dictionary = _pending_location
+	_pending_location = null
+	if not _has_fetched or GeoMath.haversine_distance_meters(pending["lat"], pending["lon"], _last_fetch_lat, _last_fetch_lon) > refetch_trigger_meters:
+		_fetch_around(pending["lat"], pending["lon"])

@@ -8,6 +8,8 @@ extends MapNode
 # consumes the altar (one-time use).
 
 signal boss_fight_requested
+signal boss_defeated
+signal interaction_available(altar: BossAltarNode, available: bool)
 
 @export var boss_scene: PackedScene
 @export var interact_action := "ui_accept" # default Enter/Space -- swap for a dedicated "interact" action later if you want
@@ -31,11 +33,17 @@ func _on_player_entered(player: PlayerController) -> void:
 	_player_in_range = true
 	_prompted = false
 	_player = player
+	interaction_available.emit(self, true)
 
 
 func _on_player_exited(_player: PlayerController) -> void:
 	_player_in_range = false
 	_prompted = false
+	interaction_available.emit(self, false)
+
+
+func summon_boss() -> void:
+	_summon_boss()
 
 
 func _summon_boss() -> void:
@@ -44,6 +52,7 @@ func _summon_boss() -> void:
 		return
 
 	boss_fight_requested.emit()
+	interaction_available.emit(self, false)
 	print("[BossAltar] Boss summoned!")
 
 	var boss: Boss = boss_scene.instantiate()
@@ -54,6 +63,7 @@ func _summon_boss() -> void:
 	boss.attacked_player.connect(_player.take_damage)
 	boss.died.connect(func():
 		_player.add_currency(boss.currency_reward)
+		boss_defeated.emit()
 		if victory_screen_path != NodePath(""):
 			var screen := get_tree().current_scene.get_node(victory_screen_path) as BossVictoryScreen
 			screen.show_victory(boss.currency_reward)
