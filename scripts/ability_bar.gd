@@ -22,13 +22,13 @@ func _ready() -> void:
 	var second_wind_button := get_node(second_wind_button_path) as AbilityButtonUI
 	var overcharge_button := get_node(overcharge_button_path) as AbilityButtonUI
 
-	_buttons[Abilities.Type.KNOCKBACK_PULSE] = knockback_button
-	_buttons[Abilities.Type.SECOND_WIND] = second_wind_button
-	_buttons[Abilities.Type.OVERCHARGE] = overcharge_button
+	_buttons[Abilities.Type.STASIS_PULSE] = knockback_button
+	_buttons[Abilities.Type.FIELD_DRESSING] = second_wind_button
+	_buttons[Abilities.Type.FRAG_GRENADE] = overcharge_button
 
-	knockback_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.KNOCKBACK_PULSE))
-	second_wind_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.SECOND_WIND))
-	overcharge_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.OVERCHARGE))
+	knockback_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.STASIS_PULSE))
+	second_wind_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.FIELD_DRESSING))
+	overcharge_button.pressed.connect(func(): _player.try_activate_ability(Abilities.Type.FRAG_GRENADE))
 
 
 func _process(_delta: float) -> void:
