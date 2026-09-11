@@ -60,6 +60,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
+	if get_speed_multiplier() <= 0.01:
+		velocity = Vector3.ZERO
+		return
 
 	if _knockback_active:
 		return # let the tween own position exclusively -- don't fight it with move_and_slide
@@ -125,7 +128,7 @@ func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
 		return
 	direction = direction.normalized()
 
-	velocity = direction * speed
+	velocity = direction * speed * get_speed_multiplier()
 	move_and_slide()
 
 	look_at(global_position + direction, Vector3.UP)
