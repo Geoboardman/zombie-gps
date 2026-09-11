@@ -331,6 +331,7 @@ func _play_outbreak_pulse() -> void:
 	mesh.bottom_radius = 1.0
 	mesh.height = 0.025
 	ring.mesh = mesh
+	get_tree().current_scene.add_child(ring)
 	ring.global_position = _player.global_position + Vector3(0.0, 0.08, 0.0)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.1, 0.9, 0.85, 0.6)
@@ -338,7 +339,6 @@ func _play_outbreak_pulse() -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.no_depth_test = true
 	ring.material_override = material
-	get_tree().current_scene.add_child(ring)
 	ring.scale = Vector3(0.2, 1.0, 0.2)
 	var tween := create_tween()
 	tween.set_parallel(true)
