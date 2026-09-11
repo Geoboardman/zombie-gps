@@ -39,6 +39,7 @@ mesh = SubResource("CapsuleMesh_brt")
 surface_material_override/0 = SubResource("StandardMaterial3D_brt")
 
 [node name="VisualRoot" type="Node3D" parent="."]
+rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(1.34, 1.34, 1.34)
 script = ExtResource("3_visual")
 
