@@ -56,6 +56,12 @@ var _toast_tween: Tween
 var _choice_after_cache := false
 var _rng := RandomNumberGenerator.new()
 var _recent_upgrade_choices: Array[int] = []
+var _pending_combat_rewards := 0
+var _combat_kills_since_reward := 0
+var _guided_choices := 0
+
+@export_group("Combat Rewards")
+@export var kills_per_upgrade_choice := 8
 
 
 func _ready() -> void:
@@ -97,6 +103,13 @@ func _process(_delta: float) -> void:
 func register_enemy_defeated() -> void:
 	zombies_defeated += 1
 	_add_heat(kill_heat)
+	if stage >= Stage.SUPPLY and stage < Stage.COMPLETE:
+		_combat_kills_since_reward += 1
+		if _combat_kills_since_reward >= max(1, kills_per_upgrade_choice):
+			_combat_kills_since_reward = 0
+			_pending_combat_rewards += 1
+			# Defer until after enemy death signals and scene-tree cleanup finish.
+			_try_show_combat_reward.call_deferred()
 	for node: Node in get_tree().get_nodes_in_group("survivors"):
 		var survivor := node as Survivor
 		if survivor != null:
@@ -172,18 +185,25 @@ func _on_field_kit_opened() -> void:
 		Upgrades.Type.ATTACK_SPEED,
 		Upgrades.Type.MAX_HEALTH,
 	])
+	_guided_choices += 1
 
 
 func _on_upgrade_chosen(type: Upgrades.Type) -> void:
+	if _guided_choices <= 0:
+		_try_show_combat_reward.call_deferred()
+		return
+	_guided_choices -= 1
 	if _choice_after_cache:
 		_choice_after_cache = false
 		_begin_survivor_stage(type)
+		_try_show_combat_reward.call_deferred()
 		return
 	stage = Stage.SUPPLY
 	opening_completed.emit()
 	_spawn_supply(supply_distance)
 	_set_objective("SUPPLY SIGNAL", _detail_for_stage())
 	_toast("%s EQUIPPED  •  SUPPLY CACHE LOCATED" % Upgrades.display_name(type).to_upper())
+	_try_show_combat_reward.call_deferred()
 
 
 func _spawn_supply(distance: float) -> void:
@@ -205,6 +225,16 @@ func _on_supply_collected(gold_found: int, healing_found: int) -> void:
 	_set_objective("CACHE EQUIPMENT FOUND", "Choose one upgrade before moving on")
 	_toast("CACHE SEARCHED  •  +%d GOLD  •  +%d HP" % [gold_found, healing_found])
 	_upgrade_choice.show_choices(_player, _draft_upgrade_choices(3), "SUPPLY CACHE — CHOOSE ONE")
+	_guided_choices += 1
+
+
+func _try_show_combat_reward() -> void:
+	if _pending_combat_rewards <= 0 or _upgrade_choice.visible or get_tree().paused:
+		return
+	if _player.health.current_health <= 0 or stage == Stage.COMPLETE:
+		return
+	_pending_combat_rewards -= 1
+	_upgrade_choice.show_choices(_player, _draft_upgrade_choices(3), "OUTBREAK CLEARED — CHOOSE ONE")
 
 
 func _begin_survivor_stage(chosen_type: Upgrades.Type) -> void:
@@ -301,7 +331,27 @@ func _draft_upgrade_choices(count: int) -> Array[int]:
 
 	var choices: Array[int] = []
 	var used_categories: Array[String] = []
+	# An owned build tag gets one reliable follow-up option, while the other
+	# slots still offer defense and experimentation.
+	var strongest_tag := ""
+	var strongest_count := 0
+	for tag in ["WEAPON", "SURVIVAL", "ABILITY"]:
+		var owned := 0
+		for candidate: int in full_pool:
+			if _upgrade_category(candidate) == tag:
+				owned += _player.get_upgrade_count(candidate as Upgrades.Type)
+		if owned > strongest_count:
+			strongest_tag = tag
+			strongest_count = owned
+	if strongest_tag != "":
+		for candidate: int in pool:
+			if _upgrade_category(candidate) == strongest_tag:
+				choices.append(candidate)
+				used_categories.append(strongest_tag)
+				break
 	for candidate: int in pool:
+		if choices.has(candidate):
+			continue
 		var category: String = _upgrade_category(candidate)
 		if used_categories.has(category):
 			continue
@@ -341,12 +391,12 @@ func _shuffle_with_run_rng(values: Array[int]) -> void:
 
 
 func _on_extract_requested() -> void:
-	var profile := RunProfile.record_extraction(_player.currency, district)
+	var profile := RunProfile.record_extraction(_player.currency, district, zombies_defeated)
 	_victory_screen.show_extraction_summary(
-		"DISTRICT REACHED: %d\nDISTANCE: %dm\nZOMBIES DEFEATED: %d\nSURVIVORS RECRUITED: %d\nBOSSES DEFEATED: %d\nGOLD BANKED: %d\n\nCAREER GOLD: %d  •  BEST DISTRICT: %d" % [
+		"DISTRICT REACHED: %d\nDISTANCE: %dm\nZOMBIES DEFEATED: %d\nSURVIVORS RECRUITED: %d\nBOSSES DEFEATED: %d\nGOLD BANKED: %d\n\nRESEARCH: %d  •  BEST DISTRICT: %d" % [
 			district, int(total_distance_meters), zombies_defeated,
 			survivors_recruited, bosses_defeated, _player.currency,
-			int(profile["total_extracted_gold"]), int(profile["best_district"]),
+			int(profile["research"]), int(profile["best_district"]),
 		]
 	)
 
