@@ -3,8 +3,8 @@ extends Control
 
 # An egocentric compass strip: "ahead" (wherever the player is currently
 # facing) sits at the center, directly behind wraps to both edges. Every
-# MapNode in the world (shop or boss altar) shows up as a colored dot
-# with a distance label, regardless of how far away or out of view it
+# MapNode in the world (shop or boss altar) shows up as a colored diamond,
+# regardless of how far away or out of view it
 # is -- this is the actual answer to "which way should I walk," since in
 # a real-world game a node 300m away is never going to be visible in the
 # 3D view no matter how good your draw distance is.
@@ -29,14 +29,19 @@ func _draw() -> void:
 	if _player == null:
 		return
 
-	draw_rect(Rect2(0, 0, strip_width, strip_height), Color(0, 0, 0, 0.45))
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	draw_style_box(_compass_background(), Rect2(0, 0, actual_width, strip_height))
 
 	var heading_deg := rad_to_deg(_angle_of(-_player.global_transform.basis.z))
+	_draw_notches(heading_deg)
 
 	_draw_cardinal("N", 0.0, heading_deg)
 	_draw_cardinal("E", 90.0, heading_deg)
 	_draw_cardinal("S", 180.0, heading_deg)
 	_draw_cardinal("W", -90.0, heading_deg)
+	var center_x := actual_width / 2.0
+	draw_line(Vector2(center_x, 3.0), Vector2(center_x, 8.0), Color(0.95, 0.78, 0.25), 3.0)
+	draw_line(Vector2(center_x, strip_height - 7.0), Vector2(center_x, strip_height - 3.0), Color(0.95, 0.78, 0.25), 3.0)
 
 	for node in get_tree().get_nodes_in_group("map_pois"):
 		var poi := node as Node3D
@@ -45,30 +50,45 @@ func _draw() -> void:
 
 		var to_target := poi.global_position - _player.global_position
 		to_target.y = 0.0
-		var dist := to_target.length()
 		var bearing_deg := rad_to_deg(_angle_of(to_target))
 		var relative_deg := wrapf(bearing_deg - heading_deg, -180.0, 180.0)
 
-		var x := (strip_width / 2.0) + (relative_deg / 180.0) * (strip_width / 2.0)
+		var x: float = clampf(
+			(actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0),
+			9.0,
+			actual_width - 9.0
+		)
 
 		var color := Color(0.95, 0.8, 0.1) # shop yellow, matches shop_node.tscn
-		var label := "Shop"
 		if poi is BossAltarNode:
 			color = Color(0.7, 0.2, 0.9) # boss purple, matches boss_altar_node.tscn
-			label = "Boss"
 		elif poi is SurvivorNode:
 			color = Color(0.85, 0.55, 0.25) # amber, matches survivor_node.tscn
-			label = "Survivor"
 		elif poi is SupplyCacheNode:
 			color = Color(0.15, 0.75, 0.85)
-			label = "Supply"
+		elif poi is FieldKitNode:
+			color = Color(0.95, 0.55, 0.1)
 
-		draw_circle(Vector2(x, strip_height / 2.0), 6.0, color)
-		draw_string(
-			ThemeDB.fallback_font, Vector2(x - 30.0, strip_height + 16.0),
-			"%s %dm" % [label, int(dist)],
-			HORIZONTAL_ALIGNMENT_CENTER, 60.0, 14, color
-		)
+		var marker := PackedVector2Array([
+			Vector2(x, 6.0),
+			Vector2(x + 6.0, strip_height / 2.0),
+			Vector2(x, strip_height - 6.0),
+			Vector2(x - 6.0, strip_height / 2.0),
+		])
+		draw_colored_polygon(marker, color)
+
+
+func _draw_notches(heading_deg: float) -> void:
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	for absolute_deg in range(0, 360, 15):
+		var relative_deg := wrapf(float(absolute_deg) - heading_deg, -180.0, 180.0)
+		if absf(relative_deg) > 90.0:
+			continue
+		var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
+		var is_major := absolute_deg % 45 == 0
+		var notch_top := 23.0 if is_major else 26.0
+		var notch_color := Color(0.72, 0.82, 0.84, 0.72 if is_major else 0.42)
+		draw_line(Vector2(x, notch_top), Vector2(x, strip_height - 5.0), notch_color, 1.5)
 
 
 func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> void:
@@ -76,8 +96,18 @@ func _draw_cardinal(text: String, absolute_deg: float, heading_deg: float) -> vo
 	if absf(relative_deg) > 90.0:
 		return # behind the player -- don't clutter the strip with it
 
-	var x := (strip_width / 2.0) + (relative_deg / 180.0) * (strip_width / 2.0)
-	draw_string(ThemeDB.fallback_font, Vector2(x - 6.0, 14.0), text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 16, Color.WHITE)
+	var actual_width := size.x if size.x > 0.0 else strip_width
+	var x := (actual_width / 2.0) + (relative_deg / 180.0) * (actual_width / 2.0)
+	draw_string(ThemeDB.fallback_font, Vector2(x - 10.0, 21.0), text, HORIZONTAL_ALIGNMENT_CENTER, 20.0, 15, Color.WHITE)
+
+
+func _compass_background() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.018, 0.055, 0.068, 0.82)
+	box.border_color = Color(0.3, 0.62, 0.68, 0.72)
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(10)
+	return box
 
 
 # Consistent 2D bearing angle for any world-space vector, ignoring Y --

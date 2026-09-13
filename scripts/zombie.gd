@@ -33,6 +33,7 @@ var _knockback_recovery_timer := 0.0 # briefly locks out chase/attack right afte
 var _knockback_active := false # true only while the knockback tween is actively animating position
 var _mesh_material: StandardMaterial3D
 var _health_bar: HealthBar3D
+var _visual: CharacterVisual
 
 
 func _ready() -> void:
@@ -55,10 +56,17 @@ func _ready() -> void:
 
 	_health_bar = get_node("HealthBar") as HealthBar3D
 	_health_bar.set_fraction(1.0)
+	_visual = get_node_or_null("VisualRoot") as CharacterVisual
+	_play_state_animation()
 
 
 func _physics_process(delta: float) -> void:
 	if target == null:
+		return
+	if _visual != null:
+		_visual.set_animation_speed(get_speed_multiplier())
+	if get_speed_multiplier() <= 0.01:
+		velocity = Vector3.ZERO
 		return
 
 	if _knockback_active:
@@ -82,7 +90,7 @@ func _physics_process(delta: float) -> void:
 
 func _process_wander(delta: float, distance_to_target: float) -> void:
 	if distance_to_target < detection_radius:
-		_state = State.CHASE
+		_set_state(State.CHASE)
 		return
 
 	if global_position.distance_to(_wander_target) < 0.5:
@@ -93,12 +101,12 @@ func _process_wander(delta: float, distance_to_target: float) -> void:
 
 func _process_chase(delta: float, distance_to_target: float) -> void:
 	if distance_to_target > lose_interest_radius:
-		_state = State.WANDER
+		_set_state(State.WANDER)
 		_pick_new_wander_target()
 		return
 
 	if distance_to_target < attack_range:
-		_state = State.ATTACK
+		_set_state(State.ATTACK)
 		_attack_timer = 0.0
 		return
 
@@ -107,15 +115,35 @@ func _process_chase(delta: float, distance_to_target: float) -> void:
 
 func _process_attack(delta: float, distance_to_target: float) -> void:
 	if distance_to_target > attack_range * 1.2:
-		_state = State.CHASE
+		_set_state(State.CHASE)
 		return
 
 	look_at(Vector3(target.global_position.x, global_position.y, target.global_position.z), Vector3.UP)
 
 	_attack_timer -= delta
 	if _attack_timer <= 0.0:
-		attacked_player.emit(attack_damage)
+		if _visual != null:
+			_visual.play_once("Punch", "Idle_Attack", 0.45)
+		var survivor_target := _nearest_survivor_in_range(maxf(3.2, attack_range * 1.3))
+		if survivor_target != null:
+			survivor_target.take_damage(attack_damage)
+		else:
+			attacked_player.emit(attack_damage)
 		_attack_timer = attack_cooldown
+
+
+func _nearest_survivor_in_range(maximum_distance: float) -> Survivor:
+	var nearest: Survivor = null
+	var nearest_distance := maximum_distance
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var candidate := node as Survivor
+		if candidate == null or not candidate.can_be_attacked():
+			continue
+		var distance := global_position.distance_to(candidate.global_position)
+		if distance <= nearest_distance:
+			nearest = candidate
+			nearest_distance = distance
+	return nearest
 
 
 func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
@@ -125,7 +153,7 @@ func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
 		return
 	direction = direction.normalized()
 
-	velocity = direction * speed
+	velocity = direction * speed * get_speed_multiplier()
 	move_and_slide()
 
 	look_at(global_position + direction, Vector3.UP)
@@ -140,6 +168,8 @@ func _pick_new_wander_target() -> void:
 func _on_health_changed(current: int, max_hp: int) -> void:
 	_health_bar.set_fraction(float(current) / float(max_hp))
 	_flash_hit()
+	if _visual != null:
+		_visual.play_once("HitReact", _animation_for_state(), 0.25)
 
 
 func _flash_hit() -> void:
@@ -152,7 +182,28 @@ func _flash_hit() -> void:
 func _on_died() -> void:
 	set_physics_process(false)
 	died.emit()
-	queue_free()
+	var delay := _visual.play_death() if _visual != null else 0.4
+	get_tree().create_timer(delay).timeout.connect(queue_free)
+
+
+func _set_state(next_state: State) -> void:
+	if _state == next_state:
+		return
+	_state = next_state
+	_play_state_animation()
+
+
+func _play_state_animation() -> void:
+	if _visual != null:
+		_visual.play_clip(_animation_for_state())
+
+
+func _animation_for_state() -> String:
+	match _state:
+		State.WANDER: return "Walk"
+		State.CHASE: return "Run"
+		State.ATTACK: return "Idle_Attack"
+		_: return "Idle"
 
 
 # Called externally (by the player's knockback pulse). Smoothly shoves
@@ -163,7 +214,7 @@ func apply_knockback(direction: Vector3, force: float) -> void:
 	if _knockback_active:
 		return # already mid-knockback -- don't stack a second tween on top
 
-	_state = State.WANDER
+	_set_state(State.WANDER)
 	_knockback_recovery_timer = 0.75
 	_pick_new_wander_target()
 

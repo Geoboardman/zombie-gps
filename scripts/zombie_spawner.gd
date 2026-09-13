@@ -37,6 +37,57 @@ var _wave_timer := 0.0
 var _map_ready := false
 var _opening_ready := false
 var _director: RunDirector
+var _district := 1
+var _run_seed := 0
+var _rng := RandomNumberGenerator.new()
+
+enum DistrictModifier { STANDARD, RUNNER_SURGE, BRUTE_TERRITORY, SWARM }
+var _district_modifier := DistrictModifier.STANDARD
+
+
+func configure_run(seed_value: int) -> void:
+	_run_seed = seed_value
+	_rng.seed = seed_value
+
+
+func begin_district(value: int) -> void:
+	_district = max(1, value)
+	_district_modifier = modifier_for_district(_district, _run_seed)
+	# Make the district change felt immediately instead of waiting through a
+	# full old wave timer. This is still capped by max_alive_zombies.
+	_wave_timer = min(_wave_timer, 4.0)
+
+
+static func modifier_for_district(value: int, run_seed := 0) -> DistrictModifier:
+	if value <= 1:
+		return DistrictModifier.STANDARD
+	var district_rng := RandomNumberGenerator.new()
+	district_rng.seed = run_seed ^ (value * 104729)
+	return DistrictModifier.values()[district_rng.randi_range(1, DistrictModifier.values().size() - 1)] as DistrictModifier
+
+
+static func modifier_name_for_district(value: int, run_seed := 0) -> String:
+	match modifier_for_district(value, run_seed):
+		DistrictModifier.RUNNER_SURGE:
+			return "RUNNER SURGE"
+		DistrictModifier.BRUTE_TERRITORY:
+			return "BRUTE TERRITORY"
+		DistrictModifier.SWARM:
+			return "THE HORDE"
+		_:
+			return "FIRST OUTBREAK"
+
+
+static func modifier_description_for_district(value: int, run_seed := 0) -> String:
+	match modifier_for_district(value, run_seed):
+		DistrictModifier.RUNNER_SURGE:
+			return "Fast zombies dominate incoming waves"
+		DistrictModifier.BRUTE_TERRITORY:
+			return "Heavy zombies appear much more often"
+		DistrictModifier.SWARM:
+			return "Each wave contains extra infected"
+		_:
+			return "Standard infected activity"
 
 
 func _ready() -> void:
@@ -75,7 +126,8 @@ func _current_wave_interval() -> float:
 
 func _current_wave_size() -> int:
 	var current_heat := _director.get_heat() if _director != null else _elapsed_time / 60.0
-	return wave_size_start + int(floor(current_heat / heat_per_extra_zombie))
+	var modifier_bonus := 2 if _district_modifier == DistrictModifier.SWARM else 0
+	return wave_size_start + int(floor(current_heat / heat_per_extra_zombie)) + modifier_bonus
 
 
 func _on_map_ready() -> void:
@@ -132,10 +184,10 @@ func _spawn_zombie_near(center: Vector3) -> void:
 		push_error("[ZombieSpawner] No zombie_scenes assigned")
 		return
 
-	var scene := zombie_scenes[randi() % zombie_scenes.size()]
+	var scene := _pick_scene_for_district()
 
-	var angle := randf() * TAU
-	var radius := randf_range(spawn_radius_min, spawn_radius_max)
+	var angle := _rng.randf() * TAU
+	var radius := _rng.randf_range(spawn_radius_min, spawn_radius_max)
 	var spawn_pos := center + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
 
 	var zombie: Zombie = scene.instantiate()
@@ -148,3 +200,13 @@ func _spawn_zombie_near(center: Vector3) -> void:
 		if _director != null:
 			_director.register_enemy_defeated()
 	)
+
+
+func _pick_scene_for_district() -> PackedScene:
+	# Main wires scenes as basic, runner, brute. Fall back to the full pool if a
+	# variant is absent so custom test scenes remain safe.
+	if _district_modifier == DistrictModifier.RUNNER_SURGE and zombie_scenes.size() >= 2 and _rng.randf() < 0.7:
+		return zombie_scenes[1]
+	if _district_modifier == DistrictModifier.BRUTE_TERRITORY and zombie_scenes.size() >= 3 and _rng.randf() < 0.55:
+		return zombie_scenes[2]
+	return zombie_scenes[_rng.randi_range(0, zombie_scenes.size() - 1)]

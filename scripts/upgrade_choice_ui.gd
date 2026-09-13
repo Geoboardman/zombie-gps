@@ -20,12 +20,12 @@ func _ready() -> void:
 		button.pressed.connect(_on_button_pressed.bind(_buttons.size() - 1))
 
 
-func show_choices(player: PlayerController, choices: Array) -> void:
+func show_choices(player: PlayerController, choices: Array, heading := "FIELD KIT RECOVERED — CHOOSE ONE") -> void:
 	_player = player
 	_choices.clear()
 	_choices.assign(choices)
 	var title := get_node(title_path) as Label
-	title.text = "CHOOSE YOUR FIRST ADVANTAGE"
+	title.text = heading
 	for i in range(_buttons.size()):
 		_buttons[i].text = _button_text(_choices[i] as Upgrades.Type)
 	visible = true
@@ -37,6 +37,7 @@ func _on_button_pressed(index: int) -> void:
 		return
 	var type := _choices[index] as Upgrades.Type
 	var description := Upgrades.apply(_player, type)
+	_player.record_upgrade(type)
 	print("[Opening Reward] %s" % description)
 	visible = false
 	get_tree().paused = false
@@ -44,12 +45,4 @@ func _on_button_pressed(index: int) -> void:
 
 
 func _button_text(type: Upgrades.Type) -> String:
-	match type:
-		Upgrades.Type.ATTACK_DAMAGE:
-			return "HOLLOW POINTS\n+5 attack damage"
-		Upgrades.Type.ATTACK_SPEED:
-			return "QUICK HANDS\n15% faster attacks"
-		Upgrades.Type.MAX_HEALTH:
-			return "FIELD DRESSING\n+20 maximum health"
-		_:
-			return Upgrades.display_name(type)
+	return "%s\n%s" % [Upgrades.display_name(type).to_upper(), Upgrades.choice_description(type)]

@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/field_kit_node.gd" id="1_kit"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/survival/FirstAidKit.fbx" id="2_model"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_kit"]
+radius = 7.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ring"]
+top_radius = 1.05
+bottom_radius = 1.05
+height = 0.035
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ring"]
+transparency = 1
+albedo_color = Color(0.15, 0.95, 0.5, 0.42)
+emission_enabled = true
+emission = Color(0.08, 0.75, 0.32, 1)
+emission_energy_multiplier = 1.4
+shading_mode = 0
+
+[node name="FieldKitNode" type="Area3D"]
+script = ExtResource("1_kit")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_kit")
+
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.035, 0)
+mesh = SubResource("CylinderMesh_ring")
+surface_material_override/0 = SubResource("StandardMaterial3D_ring")
+
+[node name="FirstAidKit" parent="." instance=ExtResource("2_model")]
+position = Vector3(0, 0.3, 0)
+rotation_degrees = Vector3(0, -18, 0)
+scale = Vector3(0.9, 0.9, 0.9)
+
+[node name="Label3D" type="Label3D" parent="."]
+position = Vector3(0, 1.45, 0)
+billboard = 1
+no_depth_test = true
+font_size = 48
+pixel_size = 0.015
+outline_size = 10
+text = "FIELD KIT  +"
