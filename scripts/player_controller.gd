@@ -91,6 +91,11 @@ func _ready() -> void:
 	_last_position = global_position
 
 	health = Health.new(max_health)
+	var profile := RunProfile.load_profile()
+	var training: int = int(profile.get("training_level", 0))
+	if training > 0:
+		health.max_health += training * 10
+		health.heal(training * 10)
 	health.health_changed.connect(_on_health_changed)
 	health.died.connect(_on_died)
 
@@ -529,6 +534,10 @@ func _update_currency_label() -> void:
 func record_upgrade(type: Upgrades.Type) -> void:
 	_upgrade_counts[type] = int(_upgrade_counts.get(type, 0)) + 1
 	_update_build_label()
+
+
+func get_upgrade_count(type: Upgrades.Type) -> int:
+	return int(_upgrade_counts.get(type, 0))
 
 
 func _update_build_label() -> void:
