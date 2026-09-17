@@ -54,5 +54,37 @@ func _spawn_status_ring(color: Color, duration: float) -> void:
 
 
 func take_damage(amount: int) -> void:
-	if health != null:
-		health.take_damage(amount)
+	if health == null or health.current_health <= 0 or amount <= 0:
+		return
+	var actual_damage: int = mini(amount, health.current_health)
+	var lethal := actual_damage >= health.current_health
+	health.take_damage(amount)
+	_spawn_damage_number(actual_damage, lethal)
+
+
+func _spawn_damage_number(amount: int, lethal: bool) -> void:
+	var number := Label3D.new()
+	number.text = str(amount)
+	number.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	number.no_depth_test = true
+	number.font_size = 42 if lethal else 32
+	number.outline_size = 9
+	number.pixel_size = 0.007
+	number.modulate = Color(1.0, 0.34, 0.18) if lethal else _damage_number_color(amount)
+	number.outline_modulate = Color(0.03, 0.04, 0.05, 0.95)
+	get_tree().current_scene.add_child(number)
+	var side_offset := -0.22 if get_instance_id() % 2 == 0 else 0.22
+	number.global_position = global_position + Vector3(side_offset, 2.0, 0.0)
+	number.scale = Vector3.ONE * (1.25 if lethal else 1.0)
+	var tween := number.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(number, "global_position", number.global_position + Vector3(0.0, 1.15, 0.0), 0.72).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(number, "modulate:a", 0.0, 0.72).set_delay(0.18)
+	tween.tween_property(number, "scale", Vector3.ONE * 0.82, 0.72)
+	tween.chain().tween_callback(number.queue_free)
+
+
+func _damage_number_color(amount: int) -> Color:
+	if health != null and amount >= int(ceil(float(health.max_health) * 0.25)):
+		return Color(1.0, 0.72, 0.16)
+	return Color(0.94, 0.98, 1.0)
