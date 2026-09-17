@@ -17,9 +17,9 @@ extends CharacterBody3D
 
 @export_group("Health & Attack")
 @export var max_health := 100
-@export var attack_range := 3.0
+@export var attack_range := 4.5
 @export var attack_interval := 1.0
-@export var attack_damage := 15
+@export var attack_damage := 12
 
 @export_group("Weapon Noise")
 @export var weapon_noise_radius := 24.0 # firearms; set near zero for melee/crossbows
