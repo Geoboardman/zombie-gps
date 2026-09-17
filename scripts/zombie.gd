@@ -7,7 +7,7 @@ extends Enemy
 # range, chase, and attack on contact. Purely primitive-driven -- no
 # imported model or animation required to prove this out.
 
-enum State { WANDER, CHASE, ATTACK }
+enum State { WANDER, CHASE, ATTACK, RETURN_HOME }
 
 @export var wander_radius := 8.0
 @export var detection_radius := 12.0
@@ -20,6 +20,13 @@ enum State { WANDER, CHASE, ATTACK }
 @export var max_health := 50
 @export var currency_reward := 10
 
+@export_group("Awareness")
+@export var noise_alert_duration := 4.0
+
+@export_group("Crowd Spacing")
+@export var separation_radius := 1.25
+@export var separation_strength := 1.15
+
 signal attacked_player(damage: int) # hook point for the player's health system
 signal died # emitted when health reaches zero, before this zombie frees itself
 
@@ -29,6 +36,7 @@ var _state: State = State.WANDER
 var _spawn_position: Vector3
 var _wander_target: Vector3
 var _attack_timer := 0.0
+var _noise_alert_timer := 0.0
 var _knockback_recovery_timer := 0.0 # briefly locks out chase/attack right after a knockback
 var _knockback_active := false # true only while the knockback tween is actively animating position
 var _mesh_material: StandardMaterial3D
@@ -71,6 +79,7 @@ func _physics_process(delta: float) -> void:
 
 	if _knockback_active:
 		return # let the tween own position exclusively -- don't fight it with move_and_slide
+	_noise_alert_timer = maxf(0.0, _noise_alert_timer - delta)
 
 	if _knockback_recovery_timer > 0.0:
 		_knockback_recovery_timer -= delta
@@ -86,6 +95,8 @@ func _physics_process(delta: float) -> void:
 			_process_chase(delta, distance_to_target)
 		State.ATTACK:
 			_process_attack(delta, distance_to_target)
+		State.RETURN_HOME:
+			_process_return_home(delta, distance_to_target)
 
 
 func _process_wander(delta: float, distance_to_target: float) -> void:
@@ -100,9 +111,8 @@ func _process_wander(delta: float, distance_to_target: float) -> void:
 
 
 func _process_chase(delta: float, distance_to_target: float) -> void:
-	if distance_to_target > lose_interest_radius:
-		_set_state(State.WANDER)
-		_pick_new_wander_target()
+	if distance_to_target > lose_interest_radius and _noise_alert_timer <= 0.0:
+		_set_state(State.RETURN_HOME)
 		return
 
 	if distance_to_target < attack_range:
@@ -113,11 +123,35 @@ func _process_chase(delta: float, distance_to_target: float) -> void:
 	_move_toward(target.global_position, chase_speed, delta)
 
 
+func _process_return_home(delta: float, distance_to_target: float) -> void:
+	if distance_to_target < detection_radius:
+		_set_state(State.CHASE)
+		return
+	if global_position.distance_to(_spawn_position) <= 0.75:
+		_set_state(State.WANDER)
+		_pick_new_wander_target()
+		return
+	_move_toward(_spawn_position, wander_speed, delta)
+
+
+func hear_noise(source_position: Vector3, noise_radius: float) -> void:
+	if noise_radius <= 0.0 or global_position.distance_to(source_position) > noise_radius:
+		return
+	_noise_alert_timer = noise_alert_duration
+	_set_state(State.CHASE)
+
+
 func _process_attack(delta: float, distance_to_target: float) -> void:
 	if distance_to_target > attack_range * 1.2:
 		_set_state(State.CHASE)
 		return
 
+	var crowd_push := _separation_vector()
+	if crowd_push.length_squared() > 0.0001:
+		velocity = crowd_push.normalized() * chase_speed * 0.35 * get_speed_multiplier()
+		move_and_slide()
+	else:
+		velocity = Vector3.ZERO
 	look_at(Vector3(target.global_position.x, global_position.y, target.global_position.z), Vector3.UP)
 
 	_attack_timer -= delta
@@ -147,16 +181,38 @@ func _nearest_survivor_in_range(maximum_distance: float) -> Survivor:
 
 
 func _move_toward(destination: Vector3, speed: float, _delta: float) -> void:
-	var direction := (destination - global_position)
-	direction.y = 0.0
-	if direction.length_squared() < 0.0001:
+	var desired := destination - global_position
+	desired.y = 0.0
+	if desired.length_squared() < 0.0001:
 		return
-	direction = direction.normalized()
+	var direction := desired.normalized()
+	var separation := _separation_vector()
+	if separation.length_squared() > 0.0001:
+		direction = (direction + separation * separation_strength).normalized()
 
 	velocity = direction * speed * get_speed_multiplier()
 	move_and_slide()
 
 	look_at(global_position + direction, Vector3.UP)
+
+
+func _separation_vector() -> Vector3:
+	var separation := Vector3.ZERO
+	for node: Node in get_tree().get_nodes_in_group("zombies"):
+		var neighbor := node as Enemy
+		if neighbor == null or neighbor == self:
+			continue
+		var offset := global_position - neighbor.global_position
+		offset.y = 0.0
+		var distance := offset.length()
+		if distance >= separation_radius:
+			continue
+		if distance < 0.01:
+			var fallback_angle := deg_to_rad(float(get_instance_id() % 360))
+			offset = Vector3(cos(fallback_angle), 0.0, sin(fallback_angle))
+			distance = 0.01
+		separation += offset.normalized() * (1.0 - distance / separation_radius)
+	return separation
 
 
 func _pick_new_wander_target() -> void:
@@ -203,6 +259,7 @@ func _animation_for_state() -> String:
 		State.WANDER: return "Walk"
 		State.CHASE: return "Run"
 		State.ATTACK: return "Idle_Attack"
+		State.RETURN_HOME: return "Walk"
 		_: return "Idle"
 
 
