@@ -66,10 +66,11 @@ func _spawn_damage_number(amount: int, lethal: bool) -> void:
 	var number := Label3D.new()
 	number.text = str(amount)
 	number.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	number.fixed_size = true
 	number.no_depth_test = true
-	number.font_size = 42 if lethal else 32
-	number.outline_size = 9
-	number.pixel_size = 0.007
+	number.font_size = 54 if lethal else 42
+	number.outline_size = 12
+	number.pixel_size = 0.009
 	number.modulate = Color(1.0, 0.34, 0.18) if lethal else _damage_number_color(amount)
 	number.outline_modulate = Color(0.03, 0.04, 0.05, 0.95)
 	get_tree().current_scene.add_child(number)
