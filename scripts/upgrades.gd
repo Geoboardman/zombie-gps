@@ -180,6 +180,30 @@ static func choice_description(type: Type) -> String:
 		_: return "Unknown effect"
 
 
+static func choice_description_for(player: PlayerController, type: Type) -> String:
+	match type:
+		Type.ATTACK_DAMAGE:
+			return "%d → %d damage per shot" % [player.attack_damage, player.attack_damage + 5]
+		Type.ATTACK_SPEED:
+			var next_interval: float = maxf(0.2, player.attack_interval * 0.85)
+			return "%.2f → %.2f shots/sec" % [1.0 / player.attack_interval, 1.0 / next_interval]
+		Type.ATTACK_RANGE:
+			return "%.1f → %.1fm weapon range" % [player.attack_range, player.attack_range + 1.0]
+		Type.MAX_HEALTH:
+			return "%d → %d maximum health" % [player.health.max_health, player.health.max_health + 20]
+		Type.AURA_POWER:
+			return "%d → %d aura damage/tick" % [player.aura_damage_per_tick + player.aura_bonus_damage, player.aura_damage_per_tick + player.aura_bonus_damage + 2]
+		Type.REGEN:
+			return "%.1f → %.1f health/sec" % [player.regen_per_second, player.regen_per_second + 0.5]
+		Type.LIFESTEAL:
+			return "%.0f%% → %.0f%% weapon lifesteal" % [player.lifesteal_percent * 100.0, (player.lifesteal_percent + 0.05) * 100.0]
+		Type.ARMOR:
+			return "%.0f%% → %.0f%% damage reduction" % [player.damage_reduction_percent * 100.0, minf(0.75, player.damage_reduction_percent + 0.10) * 100.0]
+		_:
+			var level: int = player.get_upgrade_count(type)
+			return "LV %d → LV %d  •  %s" % [level, level + 1, choice_description(type)]
+
+
 static func category(type: Type) -> String:
 	match type:
 		Type.ATTACK_DAMAGE, Type.ATTACK_SPEED, Type.ATTACK_RANGE, Type.DOUBLE_TAP, Type.PIERCING_ROUNDS, Type.EXECUTIONER:
