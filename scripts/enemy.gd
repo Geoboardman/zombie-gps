@@ -68,15 +68,15 @@ func _spawn_damage_number(amount: int, lethal: bool) -> void:
 	number.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	number.fixed_size = true
 	number.no_depth_test = true
-	number.font_size = 54 if lethal else 42
-	number.outline_size = 12
-	number.pixel_size = 0.009
+	number.font_size = 40 if lethal else 30
+	number.outline_size = 8
+	number.pixel_size = 0.003
 	number.modulate = Color(1.0, 0.34, 0.18) if lethal else _damage_number_color(amount)
 	number.outline_modulate = Color(0.03, 0.04, 0.05, 0.95)
 	get_tree().current_scene.add_child(number)
 	var side_offset := -0.22 if get_instance_id() % 2 == 0 else 0.22
 	number.global_position = global_position + Vector3(side_offset, 2.0, 0.0)
-	number.scale = Vector3.ONE * (1.25 if lethal else 1.0)
+	number.scale = Vector3.ONE * (1.15 if lethal else 1.0)
 	var tween := number.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(number, "global_position", number.global_position + Vector3(0.0, 1.15, 0.0), 0.72).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
