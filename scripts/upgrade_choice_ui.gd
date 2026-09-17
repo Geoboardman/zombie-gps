@@ -27,7 +27,10 @@ func show_choices(player: PlayerController, choices: Array, heading := "FIELD KI
 	var title := get_node(title_path) as Label
 	title.text = heading
 	for i in range(_buttons.size()):
-		_buttons[i].text = _button_text(_choices[i] as Upgrades.Type)
+		var type := _choices[i] as Upgrades.Type
+		_buttons[i].text = _button_text(type)
+		_buttons[i].add_theme_color_override("font_color", _category_color(type))
+		_buttons[i].add_theme_color_override("font_hover_color", _category_color(type).lightened(0.15))
 	visible = true
 	get_tree().paused = true
 
@@ -45,4 +48,12 @@ func _on_button_pressed(index: int) -> void:
 
 
 func _button_text(type: Upgrades.Type) -> String:
-	return "%s\n%s" % [Upgrades.display_name(type).to_upper(), Upgrades.choice_description(type)]
+	return "%s  •  %s\n%s" % [Upgrades.category(type), Upgrades.display_name(type).to_upper(), Upgrades.choice_description_for(_player, type)]
+
+
+func _category_color(type: Upgrades.Type) -> Color:
+	match Upgrades.category(type):
+		"WEAPON": return Color(1.0, 0.72, 0.2)
+		"SURVIVAL": return Color(0.25, 0.95, 0.55)
+		"ABILITY": return Color(0.3, 0.78, 1.0)
+		_: return Color(0.86, 0.9, 0.94)
