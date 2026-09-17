@@ -144,7 +144,7 @@ func _start_opening_once() -> void:
 	_toast("OUTBREAK DETECTED")
 	_play_outbreak_pulse()
 	var zombie := starter_zombie_scene.instantiate() as Zombie
-	zombie.max_health = 15
+	zombie.max_health = 30
 	zombie.currency_reward = 15
 	zombie.detection_radius = starter_distance + 2.0
 	get_tree().current_scene.add_child(zombie)
