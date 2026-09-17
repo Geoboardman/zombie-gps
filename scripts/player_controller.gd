@@ -21,6 +21,9 @@ extends CharacterBody3D
 @export var attack_interval := 1.0
 @export var attack_damage := 15
 
+@export_group("Weapon Noise")
+@export var weapon_noise_radius := 24.0 # firearms; set near zero for melee/crossbows
+
 @export_group("Sustain")
 @export var invulnerability_duration := 0.5 # brief i-frames after any hit -- stops a swarm from stacking multiple hits at once
 @export var regen_per_second := 0.5 # slow passive trickle -- always on, no input needed
@@ -174,6 +177,7 @@ func _try_attack() -> void:
 		nearest.take_damage(damage)
 		_attack_timer = attack_interval * _current_attack_interval_multiplier()
 		_play_attack_lunge(nearest.global_position)
+		emit_weapon_noise(global_position, weapon_noise_radius)
 		_apply_piercing_hits(nearest)
 		if double_tap_level > 0:
 			get_tree().create_timer(0.12).timeout.connect(func():
@@ -185,6 +189,15 @@ func _try_attack() -> void:
 			var heal_amount := int(damage * lifesteal_percent)
 			if heal_amount > 0:
 				health.heal(heal_amount)
+
+
+func emit_weapon_noise(source_position: Vector3, noise_radius: float) -> void:
+	if noise_radius <= 0.0:
+		return
+	for node: Node in get_tree().get_nodes_in_group("zombies"):
+		var zombie := node as Zombie
+		if zombie != null:
+			zombie.hear_noise(source_position, noise_radius)
 
 
 # Passive damage tick to any enemy standing close, so lingering in a
