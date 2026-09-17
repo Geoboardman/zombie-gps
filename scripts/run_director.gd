@@ -1,13 +1,10 @@
 class_name RunDirector
 extends Node
 
-## Authors the first few minutes of a run so every session begins with a clear
-## promise, an attainable destination, and a chain of escalating payoffs.
-
 signal opening_completed
 signal heat_changed(value: float)
 
-enum Stage { WAITING_FOR_MAP, FIRST_OUTBREAK, CHOOSE_UPGRADE, SUPPLY, SURVIVOR, BOSS, COMPLETE }
+enum Stage { WAITING_FOR_MAP, FIRST_OUTBREAK, FIELD_KIT, CHOOSE_UPGRADE, SUPPLY, SURVIVOR, BOSS, COMPLETE }
 
 @export var player_path: NodePath
 @export var gps_manager_path: NodePath
@@ -16,8 +13,10 @@ enum Stage { WAITING_FOR_MAP, FIRST_OUTBREAK, CHOOSE_UPGRADE, SUPPLY, SURVIVOR, 
 @export var objective_detail_path: NodePath
 @export var toast_label_path: NodePath
 @export var upgrade_choice_path: NodePath
-@export var boss_action_button_path: NodePath
+@export var victory_screen_path: NodePath
+@export var zombie_spawner_path: NodePath
 @export var starter_zombie_scene: PackedScene
+@export var field_kit_scene: PackedScene
 @export var supply_cache_scene: PackedScene
 @export var survivor_node_scene: PackedScene
 @export var boss_altar_scene: PackedScene
@@ -34,6 +33,12 @@ enum Stage { WAITING_FOR_MAP, FIRST_OUTBREAK, CHOOSE_UPGRADE, SUPPLY, SURVIVOR, 
 
 var stage := Stage.WAITING_FOR_MAP
 var heat := 0.0
+var district := 1
+var total_distance_meters := 0.0
+var zombies_defeated := 0
+var survivors_recruited := 0
+var bosses_defeated := 0
+var run_seed := 0
 
 var _player: PlayerController
 var _gps: GPSManager
@@ -41,12 +46,22 @@ var _objective_title: Label
 var _objective_detail: Label
 var _toast_label: Label
 var _upgrade_choice: UpgradeChoiceUI
-var _boss_action_button: Button
-var _active_altar: BossAltarNode
+var _victory_screen: BossVictoryScreen
+var _zombie_spawner: ZombieSpawner
 var _active_target: Node3D
 var _last_heat_position := Vector3.ZERO
-var _map_started := false
+var _last_tracking_position := Vector3.ZERO
+var _opening_started := false
 var _toast_tween: Tween
+var _choice_after_cache := false
+var _rng := RandomNumberGenerator.new()
+var _recent_upgrade_choices: Array[int] = []
+var _pending_combat_rewards := 0
+var _combat_kills_since_reward := 0
+var _guided_choices := 0
+
+@export_group("Combat Rewards")
+@export var kills_per_upgrade_choice := 8
 
 
 func _ready() -> void:
@@ -56,20 +71,25 @@ func _ready() -> void:
 	_objective_detail = get_node(objective_detail_path)
 	_toast_label = get_node(toast_label_path)
 	_upgrade_choice = get_node(upgrade_choice_path)
-	_boss_action_button = get_node(boss_action_button_path)
-	_boss_action_button.visible = false
-	_boss_action_button.pressed.connect(_on_boss_action_pressed)
+	_victory_screen = get_node(victory_screen_path)
+	_zombie_spawner = get_node(zombie_spawner_path)
+	run_seed = int(Time.get_unix_time_from_system()) ^ Time.get_ticks_msec()
+	_rng.seed = run_seed
+	_zombie_spawner.configure_run(run_seed)
+	_zombie_spawner.begin_district(district)
+	print("[RunDirector] Run seed: %d" % run_seed)
 	_last_heat_position = _player.global_position
+	_last_tracking_position = _player.global_position
 
 	var overpass := get_node(overpass_client_path) as OverpassClient
 	overpass.features_loaded.connect(_on_map_ready)
 	overpass.fetch_failed.connect(_on_map_failed)
 	_gps.location_updated.connect(_on_location_updated)
-	_upgrade_choice.upgrade_chosen.connect(_on_starter_upgrade_chosen)
+	_upgrade_choice.upgrade_chosen.connect(_on_upgrade_chosen)
+	_victory_screen.push_deeper_requested.connect(_on_push_deeper_requested)
+	_victory_screen.extract_requested.connect(_on_extract_requested)
 
 	_set_objective("SCANNING THE OUTBREAK", "Loading the streets around you…")
-	# Network latency must never own the opening hook. If map data is not back
-	# quickly, start on the ground plane and let the streets appear afterward.
 	get_tree().create_timer(2.0).timeout.connect(_on_opening_timeout)
 
 
@@ -77,11 +97,23 @@ func _process(_delta: float) -> void:
 	if _active_target == null or not is_instance_valid(_active_target):
 		return
 	var distance := _player.global_position.distance_to(_active_target.global_position)
-	_objective_detail.text = "%s  •  %dm" % [_detail_for_stage(), int(ceil(distance))]
+	_objective_detail.text = "%dm" % int(ceil(distance))
 
 
 func register_enemy_defeated() -> void:
+	zombies_defeated += 1
 	_add_heat(kill_heat)
+	if stage >= Stage.SUPPLY and stage < Stage.COMPLETE:
+		_combat_kills_since_reward += 1
+		if _combat_kills_since_reward >= max(1, kills_per_upgrade_choice):
+			_combat_kills_since_reward = 0
+			_pending_combat_rewards += 1
+			# Defer until after enemy death signals and scene-tree cleanup finish.
+			_try_show_combat_reward.call_deferred()
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.award_experience(1)
 
 
 func get_heat() -> float:
@@ -89,34 +121,30 @@ func get_heat() -> float:
 
 
 func _on_map_ready() -> void:
-	if _map_started:
-		return
-	_map_started = true
-	_start_opening()
+	_start_opening_once()
 
 
 func _on_map_failed(_reason: String) -> void:
-	if _map_started:
-		return
-	_map_started = true
-	_toast("Map data unavailable — the run can still continue")
-	_start_opening()
+	if not _opening_started:
+		_toast("Map unavailable — the run can still continue")
+	_start_opening_once()
 
 
 func _on_opening_timeout() -> void:
-	if _map_started:
+	if not _opening_started:
+		_toast("SIGNAL ACQUIRED — MAP STILL LOADING")
+	_start_opening_once()
+
+
+func _start_opening_once() -> void:
+	if _opening_started:
 		return
-	_map_started = true
-	_toast("SIGNAL ACQUIRED — MAP STILL LOADING")
-	_start_opening()
-
-
-func _start_opening() -> void:
+	_opening_started = true
 	stage = Stage.FIRST_OUTBREAK
 	_toast("OUTBREAK DETECTED")
 	_play_outbreak_pulse()
 	var zombie := starter_zombie_scene.instantiate() as Zombie
-	zombie.max_health = 15
+	zombie.max_health = 30
 	zombie.currency_reward = 15
 	zombie.detection_radius = starter_distance + 2.0
 	get_tree().current_scene.add_child(zombie)
@@ -131,87 +159,255 @@ func _start_opening() -> void:
 func _on_starter_zombie_defeated() -> void:
 	if stage != Stage.FIRST_OUTBREAK:
 		return
-	stage = Stage.CHOOSE_UPGRADE
-	_active_target = null
+	stage = Stage.FIELD_KIT
+	var drop_position := _active_target.global_position if _active_target != null else _player.global_position
 	_player.add_currency(15)
 	register_enemy_defeated()
-	_set_objective("FIRST THREAT CLEARED", "Choose your first advantage")
+	var kit := field_kit_scene.instantiate() as FieldKitNode
+	get_tree().current_scene.add_child(kit)
+	kit.global_position = drop_position
+	kit.opened.connect(_on_field_kit_opened)
+	_active_target = kit
+	_set_objective("FIELD KIT DROPPED", "Approach and tap OPEN FIELD KIT")
 	_toast("THREAT CLEARED  •  +15 GOLD")
+
+
+func _on_field_kit_opened() -> void:
+	if stage != Stage.FIELD_KIT:
+		return
+	stage = Stage.CHOOSE_UPGRADE
+	_choice_after_cache = false
+	_active_target = null
+	_set_objective("FIELD KIT RECOVERED", "Choose one piece of equipment")
+	_toast("FIELD KIT RECOVERED")
 	_upgrade_choice.show_choices(_player, [
 		Upgrades.Type.ATTACK_DAMAGE,
 		Upgrades.Type.ATTACK_SPEED,
 		Upgrades.Type.MAX_HEALTH,
 	])
+	_guided_choices += 1
 
 
-func _on_starter_upgrade_chosen(_type: Upgrades.Type) -> void:
+func _on_upgrade_chosen(type: Upgrades.Type) -> void:
+	if _guided_choices <= 0:
+		_try_show_combat_reward.call_deferred()
+		return
+	_guided_choices -= 1
+	if _choice_after_cache:
+		_choice_after_cache = false
+		_begin_survivor_stage(type)
+		_try_show_combat_reward.call_deferred()
+		return
 	stage = Stage.SUPPLY
 	opening_completed.emit()
+	_spawn_supply(supply_distance)
+	_set_objective("SUPPLY SIGNAL", _detail_for_stage())
+	_toast("%s EQUIPPED  •  SUPPLY CACHE LOCATED" % Upgrades.display_name(type).to_upper())
+	_try_show_combat_reward.call_deferred()
+
+
+func _spawn_supply(distance: float) -> void:
 	var cache := supply_cache_scene.instantiate() as SupplyCacheNode
+	cache.configure_variant(_rng.randi_range(0, 2))
 	get_tree().current_scene.add_child(cache)
-	cache.global_position = _point_ahead(supply_distance)
+	cache.global_position = _point_ahead(distance)
 	cache.collected.connect(_on_supply_collected)
 	_active_target = cache
-	_set_objective("SUPPLY SIGNAL", _detail_for_stage())
-	_toast("SUPPLY CACHE LOCATED")
 
 
-func _on_supply_collected() -> void:
+func _on_supply_collected(gold_found: int, healing_found: int) -> void:
 	if stage != Stage.SUPPLY:
 		return
-	stage = Stage.SURVIVOR
 	_add_heat(1.0)
+	stage = Stage.CHOOSE_UPGRADE
+	_choice_after_cache = true
+	_active_target = null
+	_set_objective("CACHE EQUIPMENT FOUND", "Choose one upgrade before moving on")
+	_toast("CACHE SEARCHED  •  +%d GOLD  •  +%d HP" % [gold_found, healing_found])
+	_upgrade_choice.show_choices(_player, _draft_upgrade_choices(3), "SUPPLY CACHE — CHOOSE ONE")
+	_guided_choices += 1
+
+
+func _try_show_combat_reward() -> void:
+	if _pending_combat_rewards <= 0 or _upgrade_choice.visible or get_tree().paused:
+		return
+	if _player.health.current_health <= 0 or stage == Stage.COMPLETE:
+		return
+	_pending_combat_rewards -= 1
+	_upgrade_choice.show_choices(_player, _draft_upgrade_choices(3), "OUTBREAK CLEARED — CHOOSE ONE")
+
+
+func _begin_survivor_stage(chosen_type: Upgrades.Type) -> void:
+	stage = Stage.SURVIVOR
 	var survivor_node := survivor_node_scene.instantiate() as SurvivorNode
 	get_tree().current_scene.add_child(survivor_node)
-	survivor_node.global_position = _point_ahead(survivor_distance)
+	survivor_node.global_position = _point_ahead(survivor_distance + float(district - 1) * 10.0)
 	survivor_node.recruited.connect(_on_survivor_recruited)
 	_active_target = survivor_node
 	_set_objective("SURVIVOR DISTRESS SIGNAL", _detail_for_stage())
-	_toast("A SURVIVOR NEEDS HELP")
+	_toast("%s EQUIPPED  •  SURVIVOR SIGNAL FOUND" % Upgrades.display_name(chosen_type).to_upper())
 
 
-func _on_survivor_recruited(_survivor: Survivor) -> void:
+func _on_survivor_recruited(survivor: Survivor) -> void:
 	if stage != Stage.SURVIVOR:
 		return
 	stage = Stage.BOSS
+	survivors_recruited += 1
+	survivor.level_gained.connect(_on_survivor_level_gained)
+	survivor.permanently_lost.connect(_on_survivor_lost)
 	_add_heat(2.0)
 	var altar := boss_altar_scene.instantiate() as BossAltarNode
+	altar.district = district
+	altar.boss_mutation = _rng.randi_range(0, Boss.Mutation.values().size() - 1)
 	get_tree().current_scene.add_child(altar)
-	altar.global_position = _point_ahead(boss_distance)
+	altar.global_position = _point_ahead(boss_distance + float(district - 1) * 15.0)
 	altar.boss_fight_requested.connect(_on_boss_requested)
 	altar.boss_defeated.connect(_on_boss_defeated)
-	altar.interaction_available.connect(_on_boss_interaction_available)
 	_active_target = altar
-	_set_objective("OUTBREAK SOURCE REVEALED", _detail_for_stage())
-	_toast("BOSS SIGNAL REVEALED")
+	_set_objective("DISTRICT %d BOSS REVEALED" % district, _detail_for_stage())
+	_toast("%s RECRUITED  •  %s BOSS REVEALED" % [Survivor.name_for_kind(survivor.kind).to_upper(), Boss.mutation_name(altar.boss_mutation)])
 
 
 func _on_boss_requested() -> void:
-	_boss_action_button.visible = false
-	_active_altar = null
 	_active_target = null
-	_set_objective("DEFEAT THE OUTBREAK BOSS", "Watch the ground and evade its slam")
+	_set_objective("DEFEAT THE DISTRICT %d BOSS" % district, "Watch the ground and evade its slam")
 
 
-func _on_boss_defeated() -> void:
+func _on_boss_defeated(reward_awarded: int) -> void:
 	stage = Stage.COMPLETE
+	bosses_defeated += 1
+	for node: Node in get_tree().get_nodes_in_group("survivors"):
+		var survivor := node as Survivor
+		if survivor != null:
+			survivor.bosses_survived += 1
+			survivor.award_experience(5)
 	_add_heat(3.0)
 	_active_target = null
-	_set_objective("DISTRICT CLEARED", "Bank the run or continue deeper")
+	_set_objective("DISTRICT %d CLEARED" % district, "Extract safely or push deeper")
+	var next_district := district + 1
+	_victory_screen.show_victory(
+		reward_awarded,
+		_player.currency,
+		district,
+		ZombieSpawner.modifier_name_for_district(next_district, run_seed),
+		ZombieSpawner.modifier_description_for_district(next_district, run_seed),
+		25,
+	)
 
 
-func _on_boss_interaction_available(altar: BossAltarNode, available: bool) -> void:
-	_active_altar = altar if available else null
-	_boss_action_button.visible = available
+func _on_survivor_level_gained(survivor: Survivor) -> void:
+	_toast("%s REACHED LEVEL %d" % [survivor.survivor_name.to_upper(), survivor.level])
 
 
-func _on_boss_action_pressed() -> void:
-	if _active_altar != null and is_instance_valid(_active_altar):
-		_active_altar.summon_boss()
+func _on_survivor_lost(survivor: Survivor) -> void:
+	_toast("%s WAS LOST" % survivor.survivor_name.to_upper())
+
+
+func _on_push_deeper_requested() -> void:
+	district += 1
+	stage = Stage.SUPPLY
+	_player.health.heal(int(_player.health.max_health * 0.25))
+	_player.currency_gain_multiplier += 0.25
+	_zombie_spawner.begin_district(district)
+	_add_heat(2.0 + district)
+	_spawn_supply(supply_distance + float(district - 1) * 15.0)
+	_set_objective(
+		"DISTRICT %d — %s" % [district, ZombieSpawner.modifier_name_for_district(district, run_seed)],
+		"%s • All gold rewards +25%%" % ZombieSpawner.modifier_description_for_district(district, run_seed)
+	)
+	_toast("%s  •  GOLD REWARDS INCREASED" % ZombieSpawner.modifier_name_for_district(district, run_seed))
+
+
+func _draft_upgrade_choices(count: int) -> Array[int]:
+	var full_pool: Array[int] = []
+	full_pool.assign(Upgrades.Type.values())
+	var pool: Array[int] = []
+	for candidate: int in full_pool:
+		if not _recent_upgrade_choices.has(candidate):
+			pool.append(candidate)
+	if pool.size() < count:
+		pool = full_pool.duplicate()
+	_shuffle_with_run_rng(pool)
+
+	var choices: Array[int] = []
+	var used_categories: Array[String] = []
+	# An owned build tag gets one reliable follow-up option, while the other
+	# slots still offer defense and experimentation.
+	var strongest_tag := ""
+	var strongest_count := 0
+	for tag in ["WEAPON", "SURVIVAL", "ABILITY"]:
+		var owned := 0
+		for candidate: int in full_pool:
+			if _upgrade_category(candidate) == tag:
+				owned += _player.get_upgrade_count(candidate as Upgrades.Type)
+		if owned > strongest_count:
+			strongest_tag = tag
+			strongest_count = owned
+	if strongest_tag != "":
+		for candidate: int in pool:
+			if _upgrade_category(candidate) == strongest_tag:
+				choices.append(candidate)
+				used_categories.append(strongest_tag)
+				break
+	for candidate: int in pool:
+		if choices.has(candidate):
+			continue
+		var category: String = _upgrade_category(candidate)
+		if used_categories.has(category):
+			continue
+		choices.append(candidate)
+		used_categories.append(category)
+		if choices.size() >= count:
+			break
+	for candidate: int in pool:
+		if choices.size() >= count:
+			break
+		if not choices.has(candidate):
+			choices.append(candidate)
+	_recent_upgrade_choices = choices.duplicate()
+	return choices
+
+
+func _upgrade_category(type: int) -> String:
+	match type:
+		Upgrades.Type.ATTACK_DAMAGE, Upgrades.Type.ATTACK_SPEED, Upgrades.Type.ATTACK_RANGE, Upgrades.Type.DOUBLE_TAP, Upgrades.Type.PIERCING_ROUNDS, Upgrades.Type.EXECUTIONER:
+			return "WEAPON"
+		Upgrades.Type.MAX_HEALTH, Upgrades.Type.REGEN, Upgrades.Type.LIFESTEAL, Upgrades.Type.ARMOR, Upgrades.Type.ADRENAL_RESPONSE:
+			return "SURVIVAL"
+		Upgrades.Type.KNOCKBACK_POWER, Upgrades.Type.AURA_POWER, Upgrades.Type.BURNING_PRESENCE, Upgrades.Type.CLUSTER_GRENADE:
+			return "ABILITY"
+		Upgrades.Type.GOLD_GAIN:
+			return "UTILITY"
+		_:
+			return "OTHER"
+
+
+func _shuffle_with_run_rng(values: Array[int]) -> void:
+	for index in range(values.size() - 1, 0, -1):
+		var swap_index := _rng.randi_range(0, index)
+		var held := values[index]
+		values[index] = values[swap_index]
+		values[swap_index] = held
+
+
+func _on_extract_requested() -> void:
+	var profile := RunProfile.record_extraction(_player.currency, district, zombies_defeated)
+	_victory_screen.show_extraction_summary(
+		"DISTRICT REACHED: %d\nDISTANCE: %dm\nZOMBIES DEFEATED: %d\nSURVIVORS RECRUITED: %d\nBOSSES DEFEATED: %d\nGOLD BANKED: %d\n\nRESEARCH: %d  •  BEST DISTRICT: %d" % [
+			district, int(total_distance_meters), zombies_defeated,
+			survivors_recruited, bosses_defeated, _player.currency,
+			int(profile["research"]), int(profile["best_district"]),
+		]
+	)
 
 
 func _on_location_updated(_lat: float, _lon: float) -> void:
 	var current := _gps.get_local_position()
+	var segment := current.distance_to(_last_tracking_position)
+	if segment < 100.0:
+		total_distance_meters += segment
+	_last_tracking_position = current
+
 	var traveled := current.distance_to(_last_heat_position)
 	if traveled >= meters_per_heat:
 		_add_heat(traveled / meters_per_heat)
@@ -224,8 +420,6 @@ func _add_heat(amount: float) -> void:
 
 
 func _point_ahead(distance: float) -> Vector3:
-	# Keep the guided chain on one readable bearing during desktop testing.
-	# Later this can choose a safe pedestrian OSM way instead.
 	return _player.global_position + Vector3(distance * 0.55, 0.0, -distance * 0.835)
 
 
@@ -233,10 +427,12 @@ func _detail_for_stage() -> String:
 	match stage:
 		Stage.FIRST_OUTBREAK:
 			return "Close the distance — your survivor fires automatically"
+		Stage.FIELD_KIT:
+			return "Open the dropped field kit"
 		Stage.SUPPLY:
-			return "Reach the cache"
+			return "Reach and search the cache"
 		Stage.SURVIVOR:
-			return "Reach the distress signal"
+			return "Reach and recruit the survivor"
 		Stage.BOSS:
 			return "Prepare, then summon the boss"
 		_:
@@ -245,7 +441,15 @@ func _detail_for_stage() -> String:
 
 func _set_objective(title: String, detail: String) -> void:
 	_objective_title.text = title
-	_objective_detail.text = detail
+	_objective_detail.text = _compact_detail(detail)
+
+
+func _compact_detail(detail: String) -> String:
+	if detail.is_empty():
+		return ""
+	if detail.to_lower().contains("loading"):
+		return "LOCATING"
+	return "ACTIVE"
 
 
 func _toast(message: String) -> void:
@@ -265,16 +469,14 @@ func _play_outbreak_pulse() -> void:
 	mesh.bottom_radius = 1.0
 	mesh.height = 0.025
 	ring.mesh = mesh
+	get_tree().current_scene.add_child(ring)
 	ring.global_position = _player.global_position + Vector3(0.0, 0.08, 0.0)
-
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.1, 0.9, 0.85, 0.6)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.no_depth_test = true
 	ring.material_override = material
-	get_tree().current_scene.add_child(ring)
-
 	ring.scale = Vector3(0.2, 1.0, 0.2)
 	var tween := create_tween()
 	tween.set_parallel(true)

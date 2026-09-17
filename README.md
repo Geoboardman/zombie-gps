@@ -14,12 +14,23 @@ markers:
 2. An outbreak is detected six meters ahead.
 3. Closing the distance triggers the player's automatic attack.
 4. The first zombie dies in one hit and awards 15 gold.
-5. The player chooses Hollow Points, Quick Hands, or Field Dressing.
-6. A nearby supply cache is revealed and awards 35 gold plus healing.
-7. A survivor distress signal appears farther ahead.
-8. Recruiting that survivor reveals the boss altar.
-9. Entering the altar radius reveals a touch-friendly **Summon Boss** button.
-10. Defeating the boss presents the existing Bank-or-Continue decision.
+5. A visible Field Kit drops where the zombie died; proximity reveals an
+   **Open Field Kit** button, but nothing happens until the player taps it.
+6. The player chooses Hollow Points, Quick Hands, or Field Dressing.
+7. A nearby supply cache is revealed; the player must tap **Search Cache** to
+   receive 35 gold and healing.
+8. A survivor distress signal appears farther ahead and requires confirmation.
+9. Recruiting that survivor reveals the boss altar.
+10. Defeating the boss offers **Push Deeper** or **Extract Run**.
+
+Proximity never spends currency, consumes rewards, recruits survivors, or
+starts bosses. It only reveals a large contextual action button. Combat remains
+automatic so the outdoor experience does not demand continuous screen focus.
+
+Pushing deeper generates another supply → survivor → boss district with longer
+distances, more heat, and a boss that scales each district. Extracting displays
+a run summary for distance, kills, recruits, bosses, district, and recovered
+gold. Meta-progression persistence is not implemented yet.
 
 Ambient waves remain gated until the first upgrade is selected. Their strength
 is driven by run heat earned through movement and meaningful actions, rather
@@ -49,6 +60,8 @@ The mock GPS starts near Redmond, Washington. Edit `mock_start_lat` and
 - `scripts/map_manager.gd` — serialized map refresh coordination
 - `scripts/map_builder.gd` — generated road and polygon meshes
 - `scripts/run_director.gd` — guided opening, objectives, heat, and progression
+- `scripts/interactable_map_node.gd` — tap-confirm contract for world objects
+- `scripts/interaction_controller.gd` — shared contextual action button
 - `scripts/player_controller.gd` — health, combat, abilities, and player stats
 - `scripts/zombie_spawner.gd` — gated, heat-scaled ambient waves
 - `scripts/zombie.gd`, `scripts/boss.gd` — enemy behavior
@@ -101,8 +114,47 @@ character pipeline is working on a phone.
 - Guided objectives are placed on a consistent local bearing, not yet snapped
   to safe pedestrian paths.
 - Real GPS and sensor heading are not implemented.
-- Continuing after a boss does not generate a second guided district yet.
+- Extracting banks carried gold, best district, and successful extraction count
+  in `user://run_profile.json`; dying loses only the current run's carried gold.
 - The public Overpass API is suitable for development, not production traffic.
 - Generated map geometry is rebuilt as one area rather than streamed in chunks.
 - Bosses intentionally resist Knockback Pulse, although ordinary damage, aura,
   and fighter-survivor attacks work through the shared `Enemy` base class.
+
+## District risk and extraction
+
+Clearing a boss creates the run's main decision. Extracting records the carried
+gold and career best safely. Pushing deeper heals 25% max health, increases all
+future gold rewards by 25%, and reveals the next district modifier, but carried
+gold is lost if the player dies before reaching another extraction checkpoint.
+
+District pressure rotates between Runner Surge (runner-heavy waves), Brute
+Territory (brute-heavy waves), and The Horde (larger waves). This is deliberately
+a small first modifier set for testing whether repeated districts feel different
+before adding bespoke hazards or map events.
+
+## Active abilities and builds
+
+The current prototype ability kit is designed for one-tap, auto-targeted combat:
+
+- Stasis Pulse freezes nearby normal zombies and slows bosses without pushing
+  enemies outside weapon range.
+- Field Dressing restores 35% maximum health over eight seconds.
+- Frag Grenade targets the densest nearby enemy cluster, telegraphs its landing
+  area, and deals visible area damage.
+
+Every searched supply cache now pauses for a three-upgrade choice. Build-shaping
+options include Double Tap, Piercing Rounds, Executioner, Burning Presence,
+Adrenal Response, and Cluster Grenade alongside the original stat upgrades.
+Acquired upgrades appear in the compact BUILD summary on the HUD.
+
+## Character asset integration
+
+The player, recruited survivors, and three standard zombie variants use models
+from the Quaternius Zombie Apocalypse Kit. Imported art lives under
+`assets/quaternius/`; gameplay roots, collision capsules, and health bars remain
+project-owned nodes. `CharacterVisual` resolves animation names inside imported
+glTF scenes and maps zombie state to Walk, Run, Idle_Attack, Punch, HitReact, and
+Death clips. Player and survivor gunfire uses the supplied gun-idle/walk clips
+plus procedural recoil, muzzle flash, and tracer feedback because the pack does
+not contain a dedicated firing animation.

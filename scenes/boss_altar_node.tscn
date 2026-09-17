@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/boss_altar_node.gd" id="1_boss"]
 [ext_resource type="PackedScene" path="res://scenes/boss.tscn" id="2_bossscn"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/survival/Radio.fbx" id="3_radio"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_boss"]
 radius = 12.0
@@ -9,23 +10,49 @@ radius = 12.0
 [sub_resource type="CylinderMesh" id="CylinderMesh_boss"]
 top_radius = 1.8
 bottom_radius = 1.8
-height = 3.0
+height = 0.045
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pedestal"]
+top_radius = 0.72
+bottom_radius = 0.95
+height = 0.7
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_boss"]
-albedo_color = Color(0.55, 0.1, 0.75, 1)
+transparency = 1
+albedo_color = Color(0.65, 0.08, 0.85, 0.4)
 emission_enabled = true
 emission = Color(0.4, 0, 0.6, 1)
-emission_energy_multiplier = 1.0
+emission_energy_multiplier = 1.65
+shading_mode = 0
 
 [node name="BossAltarNode" type="Area3D"]
 script = ExtResource("1_boss")
 boss_scene = ExtResource("2_bossscn")
-victory_screen_path = NodePath("HUD/BossVictoryScreen")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_boss")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+[node name="CorruptionRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.04, 0)
 mesh = SubResource("CylinderMesh_boss")
 surface_material_override/0 = SubResource("StandardMaterial3D_boss")
+
+[node name="Pedestal" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.36, 0)
+mesh = SubResource("CylinderMesh_pedestal")
+surface_material_override/0 = SubResource("StandardMaterial3D_boss")
+
+[node name="Radio" parent="." instance=ExtResource("3_radio")]
+position = Vector3(0, 0.75, 0)
+rotation_degrees = Vector3(0, -12, 0)
+scale = Vector3(0.85, 0.85, 0.85)
+
+[node name="BossLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.25, 0)
+billboard = 1
+no_depth_test = true
+font_size = 48
+pixel_size = 0.015
+outline_size = 10
+modulate = Color(0.9, 0.45, 1, 1)
+text = "BOSS SIGNAL"
