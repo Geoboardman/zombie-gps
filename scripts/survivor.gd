@@ -19,6 +19,7 @@ const NAMES := ["Lis", "Matt", "Sam", "Shaun"]
 @export var attack_range := 3.0
 @export var attack_damage := 8
 @export var attack_interval := 1.2
+@export var weapon_noise_radius := 18.0
 @export_group("Medic")
 @export var heal_interval := 6.0
 @export var heal_amount := 8
@@ -176,6 +177,8 @@ func _process_weapon(delta: float) -> void:
 		return
 	var target_was_alive := nearest.health != null and nearest.health.current_health > 0
 	nearest.take_damage(attack_damage)
+	if player != null:
+		player.emit_weapon_noise(global_position, weapon_noise_radius)
 	if target_was_alive and nearest.health != null and nearest.health.current_health <= 0:
 		kills += 1
 	_attack_timer = attack_interval
