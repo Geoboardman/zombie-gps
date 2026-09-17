@@ -160,8 +160,7 @@ func _try_begin_waves() -> void:
 
 
 func _spawn_initial() -> void:
-	for i in range(spawn_count):
-		_spawn_zombie_near(_player.global_position)
+	_spawn_group(spawn_count, _player.global_position)
 
 	_wave_timer = wave_interval_start
 
@@ -175,18 +174,28 @@ func _spawn_wave() -> void:
 	var count: int = min(_current_wave_size(), max_alive_zombies - alive)
 	print("[ZombieSpawner] Wave incoming: %d zombies (t=%.0fs)" % [count, _elapsed_time])
 
-	for i in range(count):
-		_spawn_zombie_near(_player.global_position)
+	_spawn_group(count, _player.global_position)
 
 
-func _spawn_zombie_near(center: Vector3) -> void:
+func _spawn_group(count: int, center: Vector3) -> void:
+	if count <= 0:
+		return
+	var base_angle := _rng.randf() * TAU
+	var angle_step := TAU / float(count)
+	for index in range(count):
+		# Even sectors prevent one random wave from appearing as a single pile.
+		# Small jitter keeps the distribution organic rather than perfectly radial.
+		var jitter := _rng.randf_range(-angle_step * 0.18, angle_step * 0.18)
+		_spawn_zombie_near(center, base_angle + angle_step * float(index) + jitter)
+
+
+func _spawn_zombie_near(center: Vector3, angle: float) -> void:
 	if zombie_scenes.is_empty():
 		push_error("[ZombieSpawner] No zombie_scenes assigned")
 		return
 
 	var scene := _pick_scene_for_district()
 
-	var angle := _rng.randf() * TAU
 	var radius := _rng.randf_range(spawn_radius_min, spawn_radius_max)
 	var spawn_pos := center + Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
 
